@@ -1,7 +1,7 @@
 #
 # create_project.tcl  Tcl script for creating project
 #
-set     project_name        "Ultra96_Design"
+set     project_name        "ultra96_design"
 set     root_directory      [file join [file dirname [info script]] ".."]
 set     project_directory   [file join $root_directory $project_name]
 set     board_part          [get_board_parts -quiet -latest_file_version "*ultra96v1*"]
