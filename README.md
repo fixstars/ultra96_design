@@ -2,8 +2,10 @@
 
 ## Requirement
 
+These are *MANDATORY* items to be installed.
+
 1. Vivado 2018.2
-2. Xilinx MIPI CSI-2 Controller SubSystem 
+2. License of Xilinx MIPI CSI-2 Controller SubSystem 
 
 You can use Evaluation license for Xilinx MIPI IP. Please go to the [product page](https://www.xilinx.com/products/intellectual-property/ef-di-mipi-csi-rx.html).
 
