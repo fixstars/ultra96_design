@@ -2,7 +2,7 @@
 
 ## Requirement
 
-These are *MANDATORY* items to be installed.
+These are **MANDATORY** items to be installed.
 
 1. Vivado 2018.2
 2. License of Xilinx MIPI CSI-2 Controller SubSystem 
