@@ -2,3 +2,5 @@ ultra96_design
 *.jou
 *.log
 *.str
+.cproject
+.project
