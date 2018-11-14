@@ -57,8 +57,8 @@ int main()
     XIicPs_Config *Config;
     XIicPs Iic;
     u8 data;
-    u8 v0;
-    u8 v1;
+    u8 v0[2];
+    u8 v1[2];
 
     init_platform();
 
@@ -71,7 +71,7 @@ int main()
     }
 
     Status = XIicPs_CfgInitialize(&Iic, Config, Config->BaseAddress);
-    if (NULL == Config) {
+    if (Status != XST_SUCCESS) {
         xil_printf("ERROR(%d):%d\n\r", __LINE__, Status);
         goto finally;
     }
@@ -84,26 +84,47 @@ int main()
 
     XIicPs_SetSClk(&Iic, 100000);
 
-    data = 0x1;
-    Status = XIicPs_MasterSendPolled(&Iic, &data, 1, 0x72);
+    data = 0x01;
+    Status = XIicPs_MasterSendPolled(&Iic, &data, 1, 0x75);
     if (Status != XST_SUCCESS) {
         xil_printf("ERROR(%d):%d\n\r", __LINE__, Status);
         goto finally;
     }
 
-    Status = XIicPs_MasterRecvPolled(&Iic, &v0, 1, 0x300a);
+    data = 0x5a;
+    Status = XIicPs_MasterRecvPolled(&Iic, &data, 1, 0x75);
     if (Status != XST_SUCCESS) {
         xil_printf("ERROR(%d):%d\n\r", __LINE__, Status);
         goto finally;
     }
- 
-    Status = XIicPs_MasterRecvPolled(&Iic, &v1, 1, 0x300b);
+
+    v0[0] = 0x30;
+    v0[1] = 0x0A;
+    Status = XIicPs_MasterSendPolled(&Iic, v0, 2, 0x3c);
+    if (Status != XST_SUCCESS) {
+        xil_printf("ERROR(%d):%d\n\r", __LINE__, Status);
+        goto finally;
+    }
+    Status = XIicPs_MasterRecvPolled(&Iic, &v0[0], 1, 0x3c);
+    if (Status != XST_SUCCESS) {
+        xil_printf("ERROR(%d):%d\n\r", __LINE__, Status);
+        goto finally;
+    }
+
+    v1[0] = 0x30;
+    v1[1] = 0x0B;
+    Status = XIicPs_MasterSendPolled(&Iic, v1, 2, 0x3c);
+    if (Status != XST_SUCCESS) {
+        xil_printf("ERROR(%d):%d\n\r", __LINE__, Status);
+        goto finally;
+    }
+    Status = XIicPs_MasterRecvPolled(&Iic, &v1[0], 1, 0x3c);
     if (Status != XST_SUCCESS) {
         xil_printf("ERROR(%d):%d\n\r", __LINE__, Status);
         goto finally;
     }
    
-    xil_printf("0x%x 0x%x\n\r", (u32)v0, (u32)v1);
+    xil_printf("0x%x 0x%x\n\r", (u32)v0[0], (u32)v1[0]);
 
 finally:
     cleanup_platform();
