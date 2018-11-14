@@ -84,7 +84,7 @@ int main()
 
     XIicPs_SetSClk(&Iic, 100000);
 
-    data = 0x01;
+    data = 0x04;
     Status = XIicPs_MasterSendPolled(&Iic, &data, 1, 0x75);
     if (Status != XST_SUCCESS) {
         xil_printf("ERROR(%d):%d\n\r", __LINE__, Status);
