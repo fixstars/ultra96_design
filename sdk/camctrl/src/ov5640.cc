@@ -459,14 +459,14 @@ static config_t cfg_ov5640_init_640_480_30[] =
 
 int init_ov5640(e_resolution resolution)
 {
-	int fd = open("/dev/i2c-2", O_RDWR);
+	int fd = open("/dev/i2c-4", O_RDWR);
 	unsigned short addr = 0x0A30;
 	unsigned char dat0 = 0x5a, dat1 = 0xa5;
 	config_t *cfg;
 	int num_cmds;
 
 	if (fd < 0) {
-		perror("open(/dev/i2c-2)");
+		perror("open(/dev/i2c-4)");
 		return -1;
 	}
 	ioctl(fd, I2C_SLAVE, (0x78 >> 1));

@@ -94,16 +94,17 @@ static void pipeline_mode_change(AXI_VDMA& vdma_driver, e_sensor sensor, e_resol
 	}
 
 	#if 0
-	int fd = open("/dev/i2c-0", O_RDWR);
-	unsigned char dat = 0x01;
+	int fd = open("/dev/i2c-1", O_RDWR);
+	unsigned char dat;
 	int ret;
-	ret = ioctl(fd, I2C_SLAVE, 0x72);
+	ret = ioctl(fd, I2C_SLAVE, 0x75);
 	printf("ioctl = 0x%x\n", ret);
+	dat = 0x4;
 	ret = write(fd, &dat, 1);
-	printf("write = 0x%x\n", ret);
+	printf("write = %d\n", ret);
 	dat = 0x5a;
 	ret = read(fd, &dat, 1);
-	printf("read = 0x%x\n", ret);
+	printf("read = %d\n", ret);
 	printf("read configuration = 0x%x\n", dat);
 	close(fd);
 	#endif

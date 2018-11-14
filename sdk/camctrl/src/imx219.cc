@@ -299,12 +299,12 @@ static config_t cfg_imx219_init_640_480_30[] =
 
 int init_imx219(e_resolution resolution)
 {
-	int fd = open("/dev/i2c-2", O_RDWR);
+	int fd = open("/dev/i2c-4", O_RDWR);
 	unsigned short addr = 0x00;
 	unsigned char dat0 = 0x5a, dat1 = 0xa5;
 
 	if (fd < 0) {
-		perror("open(/dev/i2c-2)");
+		perror("open(/dev/i2c-4)");
 		return -1;
 	}
 	ioctl(fd, I2C_SLAVE, (0x21 >> 1));
