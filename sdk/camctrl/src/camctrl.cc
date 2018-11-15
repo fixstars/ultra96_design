@@ -1,6 +1,6 @@
 #include "xparameters.h"
 #include "xcsi.h"
-
+#include "xdemosaic_root.h"
 #include "AXI_VDMA.h"
 
 #include "camctrl.h"
@@ -33,7 +33,7 @@ static int (*init_camera[])(e_resolution resolution) = {
 	init_imx219
 };
 
-static void pipeline_mode_change(AXI_VDMA& vdma_driver, e_sensor sensor, e_resolution resolution)
+static void init_hw(AXI_VDMA& vdma_driver, e_sensor sensor, e_resolution resolution)
 {
 	uint16_t h_res, v_res;
 	switch (resolution) {
@@ -71,6 +71,12 @@ static void pipeline_mode_change(AXI_VDMA& vdma_driver, e_sensor sensor, e_resol
 
 	//Bring up input pipeline back-to-front
 	vdma_driver.resetWrite();
+
+	XDemosaic_root ins_dmc;
+	XDemosaic_root_Initialize(&ins_dmc, 0);
+	XDemosaic_root_EnableAutoRestart(&ins_dmc);
+	XDemosaic_root_Start(&ins_dmc);
+
 	XCsi ins_csi;
 	XCsi_Config *psConf;
 	u32 Status;
@@ -141,6 +147,11 @@ int caminit(e_sensor sensor, e_resolution resolution, int fnum, size_t fsize)
 		return -1;
 	}
 	printf("XPAR_AXI_VDMA_0_BASEADDR = 0x%x\n", XPAR_AXI_VDMA_0_BASEADDR);
+	if (!mmap((void *)XPAR_DEMOSAIC_ROOT_0_S_AXI_BUS_AXI4LS_BASEADDR, XPAR_DEMOSAIC_ROOT_0_S_AXI_BUS_AXI4LS_HIGHADDR - XPAR_DEMOSAIC_ROOT_0_S_AXI_BUS_AXI4LS_BASEADDR, PROT_READ|PROT_WRITE, MAP_SHARED, fd, XPAR_DEMOSAIC_ROOT_0_S_AXI_BUS_AXI4LS_BASEADDR)) {
+		perror("mmap(XPAR_DEMOSAIC_ROOT_0_S_AXI_BUS_AXI4LS_BASEADDR)");
+		return -1;
+	}
+	printf("XPAR_DEMOSAIC_ROOT_0_S_AXI_BUS_AXI4LS_BASEADDR = 0x%x\n", XPAR_DEMOSAIC_ROOT_0_S_AXI_BUS_AXI4LS_BASEADDR);
 	close(fd);
 
 	fd = open("/sys/class/udmabuf/udmabuf0/size", O_RDONLY);
@@ -164,8 +175,8 @@ int caminit(e_sensor sensor, e_resolution resolution, int fnum, size_t fsize)
 
 	g_vdma_driver.init(VDMA_DEVID, phys_addr);
 	printf("vdma init completed\n");
-	pipeline_mode_change(g_vdma_driver, sensor, resolution);
-	printf("pipeline_mode_change completed\n");
+	init_hw(g_vdma_driver, sensor, resolution);
+	printf("init_hw completed\n");
 
 	fd = open("/dev/udmabuf0", O_RDWR);
 	if (fd < 0) {
