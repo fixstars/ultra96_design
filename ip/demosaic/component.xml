@@ -696,7 +696,7 @@ resolve_type immediate dependency {} format string minimum {} maximum {}} value 
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>7420b6b8</spirit:value>
+            <spirit:value>2f7adfa0</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -712,7 +712,7 @@ resolve_type immediate dependency {} format string minimum {} maximum {}} value 
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>5df1bed0</spirit:value>
+            <spirit:value>f0355503</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -728,7 +728,7 @@ resolve_type immediate dependency {} format string minimum {} maximum {}} value 
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>b45acb48</spirit:value>
+            <spirit:value>5d730d68</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -744,7 +744,7 @@ resolve_type immediate dependency {} format string minimum {} maximum {}} value 
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>fc0d38b9</spirit:value>
+            <spirit:value>2a5ccecd</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -1711,14 +1711,14 @@ resolve_type immediate dependency {} format string minimum {} maximum {}} value 
       </xilinx:taxonomies>
       <xilinx:displayName>Demosaic_root</xilinx:displayName>
       <xilinx:definitionSource>HLS</xilinx:definitionSource>
-      <xilinx:coreRevision>1811151224</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2018-11-15T20:25:03Z</xilinx:coreCreationDateTime>
+      <xilinx:coreRevision>1811191920</xilinx:coreRevision>
+      <xilinx:coreCreationDateTime>2018-11-19T10:21:05Z</xilinx:coreCreationDateTime>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
       <xilinx:xilinxVersion>2018.2.2</xilinx:xilinxVersion>
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="fb2fda96"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="84226378"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="e75b0688"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="2ef3ea20"/>
       <xilinx:checksum xilinx:scope="ports" xilinx:value="4895ec0d"/>
       <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="4b677f7f"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="fa971a5d"/>

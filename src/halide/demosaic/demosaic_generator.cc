@@ -54,8 +54,8 @@ public:
                            self);
 
       // Shift out least significant 2-bit to downcast to 8-bit unsigned representation
-      out(c, x, y) = cast<uint8_t>(select(c == 0, r_expr,
-                                          c == 1, g_expr,
+      out(c, x, y) = cast<uint8_t>(select(c == 0, g_expr,
+                                          c == 1, r_expr,
                                                   b_expr) >> 2);
 
       return out;

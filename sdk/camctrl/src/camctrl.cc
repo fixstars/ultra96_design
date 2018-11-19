@@ -1,5 +1,6 @@
 #include "xparameters.h"
 #include "xcsi.h"
+#include "xcsiss.h"
 #include "xdemosaic_root.h"
 #include "AXI_VDMA.h"
 
@@ -71,12 +72,15 @@ static void init_hw(AXI_VDMA& vdma_driver, e_sensor sensor, e_resolution resolut
 
 	//Bring up input pipeline back-to-front
 	vdma_driver.resetWrite();
+	vdma_driver.configureWrite(h_res, v_res);
+	vdma_driver.enableWrite();
 
 	XDemosaic_root ins_dmc;
 	XDemosaic_root_Initialize(&ins_dmc, 0);
 	XDemosaic_root_EnableAutoRestart(&ins_dmc);
 	XDemosaic_root_Start(&ins_dmc);
 
+	#if 1
 	XCsi ins_csi;
 	XCsi_Config *psConf;
 	u32 Status;
@@ -91,13 +95,40 @@ static void init_hw(AXI_VDMA& vdma_driver, e_sensor sensor, e_resolution resolut
 		throw std::runtime_error(__FILE__ ":" LINE_STRING);
 	}
 
-	vdma_driver.configureWrite(h_res, v_res);
-	vdma_driver.enableWrite();
+	Status = XCsi_Reset(&ins_csi);
+	if (Status != XST_SUCCESS) {
+		throw std::runtime_error(__FILE__ ":" LINE_STRING);
+	}
 
 	Status = XCsi_Activate(&ins_csi, XCSI_ENABLE);
 	if (Status != XST_SUCCESS) {
 		throw std::runtime_error(__FILE__ ":" LINE_STRING);
 	}
+	#else
+	XCsiSs ins_csi;
+	XCsiSs_Config *psConf;
+	u32 Status;
+
+	psConf = XCsiSs_LookupConfig(0);
+	if (!psConf) {
+		throw std::runtime_error(__FILE__ ":" LINE_STRING);
+	}
+
+	Status = XCsiSs_CfgInitialize(&ins_csi, psConf, XPAR_MIPI_CSI2_RX_SUBSYST_0_BASEADDR);
+	if (Status != XST_SUCCESS) {
+		throw std::runtime_error(__FILE__ ":" LINE_STRING);
+	}
+
+	Status = XCsiSs_Reset(&ins_csi);
+	if (Status != XST_SUCCESS) {
+		throw std::runtime_error(__FILE__ ":" LINE_STRING);
+	}
+
+	Status = XCsiSs_Activate(&ins_csi, XCSI_ENABLE);
+	if (Status != XST_SUCCESS) {
+		throw std::runtime_error(__FILE__ ":" LINE_STRING);
+	}
+	#endif
 
 	#if 0
 	int fd = open("/dev/i2c-1", O_RDWR);
@@ -185,7 +216,7 @@ int caminit(e_sensor sensor, e_resolution resolution, int fnum, size_t fsize)
 	}
 
 	vir_addr = (unsigned long long)mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-	printf("vir_addr = 0x%x\n", vir_addr);
+	printf("vir_addr = 0x%llx\n", vir_addr);
 	close(fd);
 
 	fd = open("/sys/class/udmabuf/udmabuf0/sync_size", O_WRONLY);
