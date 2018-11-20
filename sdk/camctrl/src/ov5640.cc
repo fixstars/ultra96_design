@@ -482,8 +482,8 @@ int init_ov5640(e_resolution resolution)
 	write_reg(fd, 0x3103, 0x11);
 	write_reg(fd, 0x3008, 0x82);
 
-	usleep(1000000);
-    
+	usleep(1000 * 1000);
+
 	cfg = cfg_ov5640_init;
 	num_cmds = sizeof(cfg_ov5640_init) / sizeof(cfg_ov5640_init[0]);
 	for (int i = 0; i < num_cmds; i++) {
@@ -517,9 +517,9 @@ int init_ov5640(e_resolution resolution)
 		write_reg(fd, cfg[i].addr, cfg[i].val);
 	}
 
-	write_reg(fd, 0x3008, 0x02);
+	//write_reg(fd, 0x3008, 0x02);
 
-	write_reg(fd, 0x3008, 0x42);
+	//write_reg(fd, 0x3008, 0x42);
 
 	cfg = cfg_ov5640_advanced_awb_;
 	num_cmds = sizeof(cfg_ov5640_advanced_awb_) / sizeof(cfg_ov5640_advanced_awb_[0]);
