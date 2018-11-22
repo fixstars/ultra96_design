@@ -29,4 +29,6 @@ If you updated block design, please export design to script/create\_bd.tcl and c
 write_bd_tcl script/create_bd.tcl
 ```
 
+If you want to add new IP, please extract IP archive(.zip) into ip/ directory and commit them.
+
 If you want to add new files or directories, handle them in script/create\_project.tcl and commit them.

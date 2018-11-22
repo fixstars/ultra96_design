@@ -1,0 +1,6 @@
+demosaic.a
+demosaic.h
+demosaic.hls
+demosaic_gen_hls
+demosaic_gen_sim
+demosaic_test

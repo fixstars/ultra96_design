@@ -8,7 +8,7 @@ set     board_part          [get_board_parts -quiet -latest_file_version "*ultra
 set     device_parts        "xczu3eg-sbva484-1-e"
 set     design_bd_tcl_file  [file normalize [file join $root_directory "script/create_bd.tcl"  ]]
 set     design_pin_xdc_file [file normalize [file join $root_directory "src/constrs/Ultra96_constraints_180318.xdc" ]]
-# lappend ip_repo_path_list   [file join $root_directory "ip"]
+lappend ip_repo_path_list   [file join $root_directory "ip"]
 
 #
 # Create project

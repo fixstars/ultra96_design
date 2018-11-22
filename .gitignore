@@ -2,3 +2,6 @@ ultra96_design
 *.jou
 *.log
 *.str
+*.bin
+.cproject
+.project
