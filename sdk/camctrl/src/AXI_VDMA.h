@@ -194,8 +194,8 @@ public:
 		context_.WriteCfg.VertSizeInput = v_res;
 		context_.WriteCfg.Stride = context_.WriteCfg.HoriSizeInput;
 		context_.WriteCfg.FrameDelay = 0;
-		context_.WriteCfg.EnableCircularBuf = 0;
-		context_.WriteCfg.EnableSync = 1; //Gen-Lock
+		context_.WriteCfg.EnableCircularBuf = 1;
+		context_.WriteCfg.EnableSync = 0; //Gen-Lock
 		context_.WriteCfg.PointNum = 0;
 		context_.WriteCfg.EnableFrameCounter = 0;
 		context_.WriteCfg.FixedFrameStoreAddr = 0; //ignored, since we circle through buffers
@@ -205,7 +205,10 @@ public:
 			throw std::runtime_error(__FILE__ ":" LINE_STRING);
 		}
 		uint32_t addr = frame_buf_base_addr_;
-		context_.WriteCfg.FrameStoreStartAddr[0] = addr;
+		for (int iFrm = 0; iFrm < drv_inst_.MaxNumFrames; ++iFrm) {
+			context_.WriteCfg.FrameStoreStartAddr[iFrm] = addr;
+			addr += context_.WriteCfg.HoriSizeInput * context_.WriteCfg.VertSizeInput;
+		}
 		status = XAxiVdma_DmaSetBufferAddr(&drv_inst_, XAXIVDMA_WRITE, context_.WriteCfg.FrameStoreStartAddr);
 		if (XST_SUCCESS != status)
 		{
@@ -217,6 +220,11 @@ public:
 		XAxiVdma_MaskS2MMErrIntr(&drv_inst_, ~XAXIVDMA_S2MM_IRQ_ERR_ALL_MASK, XAXIVDMA_WRITE);
 		//Enable write channel error and frame count interrupts
 		XAxiVdma_IntrEnable(&drv_inst_, XAXIVDMA_IXR_ERROR_MASK, XAXIVDMA_WRITE);
+	}
+	int getCurrWriteFrameStore(void) {
+		int frm;
+		frm = XAxiVdma_CurrFrameStore(&drv_inst_, XAXIVDMA_WRITE);
+		return frm;
 	}
 	void setWriteBuffer(uint32_t addr)
 	{

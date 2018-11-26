@@ -288,18 +288,13 @@ int caminit(e_sensor sensor, e_resolution resolution, int fnum, size_t fsize)
 
 unsigned long long get_frame_buffer(void)
 {
-	static int hw_fno = 1;
+	int hw_fno;
 	int sw_fno;
 	unsigned long long buf;
 	char attr[64];
 	int fd;
 
-	hw_fno++;
-	if (hw_fno == frame_num) {
-		hw_fno = 0;
-	}
-	g_vdma_driver.setWriteBuffer((uint32_t)phys_buf[hw_fno]);
-	g_vdma_driver.enableWrite();
+	hw_fno = g_vdma_driver.getCurrWriteFrameStore();
 
 	sw_fno = (hw_fno + frame_num - 1) % frame_num;
 	buf = vir_buf[sw_fno];
