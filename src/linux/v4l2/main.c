@@ -11,15 +11,20 @@
 #include <linux/of_address.h>
 #include <linux/of_device.h>
 #include <linux/of_platform.h>
+#include <linux/dma-mapping.h>
+#include <linux/interrupt.h>
 #include "zynq_v4l2.h"
 
 MODULE_DESCRIPTION("ZYNQ v4l2 device driver");
 MODULE_AUTHOR("osawa");
 MODULE_LICENSE("Dual BSD/GPL");
 
-#define DRIVER_NAME "v4l2"
-#define MINOR_BASE  0
-#define MINOR_NUM   1
+int vdma_h_res = 1920;
+int vdma_v_res = 1080;
+module_param(vdma_h_res, int, S_IRUGO);
+module_param(vdma_v_res, int, S_IRUGO);
+MODULE_PARM_DESC(vdma_h_res, "v4l2 buffer width");
+MODULE_PARM_DESC(vdma_v_res, "v4l2 buffer height");
 
 static int zynq_v4l2_open(struct inode *inode, struct file *file)
 {
@@ -74,7 +79,7 @@ static struct file_operations zynq_v4l2_fops = {
 	.mmap           = zynq_v4l2_mmap,
 };
 
-static int zynq_v4l2_create_cdev(struct zynq_v4l2_local *lp)
+static int zynq_v4l2_create_cdev(struct device *parent, struct zynq_v4l2_data *dp)
 {
 	int ret;
 	dev_t dev;
@@ -88,58 +93,69 @@ static int zynq_v4l2_create_cdev(struct zynq_v4l2_local *lp)
 		return -1;
 	}
 
-	lp->major = MAJOR(dev);
-	printk(KERN_INFO " major = %d\n", lp->major);
-	dev = MKDEV(lp->major, MINOR_BASE);
+	dp->major = MAJOR(dev);
+	printk(KERN_INFO " major = %d\n", dp->major);
+	dev = MKDEV(dp->major, MINOR_BASE);
 
-	cdev_init(&lp->cdev, &zynq_v4l2_fops);
-	lp->cdev.owner = THIS_MODULE;
+	cdev_init(&dp->cdev, &zynq_v4l2_fops);
+	dp->cdev.owner = THIS_MODULE;
 
-	ret = cdev_add(&lp->cdev, dev, MINOR_NUM);
+	ret = cdev_add(&dp->cdev, dev, MINOR_NUM);
 	if (ret != 0) {
 		printk(KERN_ERR "cdev_add = %d\n", ret);
 		unregister_chrdev_region(dev, MINOR_NUM);
 		return -1;
 	}
 
-	lp->class = class_create(THIS_MODULE, "v4l2");
-	if (IS_ERR(lp->class)) {
+	dp->class = class_create(THIS_MODULE, "v4l2");
+	if (IS_ERR(dp->class)) {
 		printk(KERN_ERR "class_create\n");
-		cdev_del(&lp->cdev);
+		cdev_del(&dp->cdev);
 		unregister_chrdev_region(dev, MINOR_NUM);
 		return -1;
 	}
 
 	for (minor = MINOR_BASE; minor < MINOR_BASE + MINOR_NUM; minor++) {
-		device_create(lp->class, NULL, MKDEV(lp->major, minor), NULL, "video%d", minor);
+		device_create(dp->class, parent, MKDEV(dp->major, minor), dp, "video%d", minor);
 	}
+	dp->dma_dev[0] = parent;
 
 	return 0;
 }
 
-static void zynq_v4l2_deletel_cdev(struct zynq_v4l2_local *lp)
+static void zynq_v4l2_delete_cdev(struct zynq_v4l2_data *dp)
 {
 	int minor;
-	dev_t dev = MKDEV(lp->major, MINOR_BASE);
+	dev_t dev = MKDEV(dp->major, MINOR_BASE);
 
 	printk(KERN_INFO "%s\n", __FUNCTION__);
 	for (minor = MINOR_BASE; minor < MINOR_BASE + MINOR_NUM; minor++) {
-		device_destroy(lp->class, MKDEV(lp->major, minor));
+		device_destroy(dp->class, MKDEV(dp->major, minor));
 	}
-	class_destroy(lp->class);
-	cdev_del(&lp->cdev);
+	class_destroy(dp->class);
+	cdev_del(&dp->cdev);
 	unregister_chrdev_region(dev, MINOR_NUM);
 }
 
-static int init_hw(struct zynq_v4l2_local *lp)
+static int hw_init(struct zynq_v4l2_data *dp)
 {
 	printk(KERN_INFO "%s\n", __FUNCTION__);
 
-	if (init_vdma(lp)) {
+	if (vdma_init(dp)) {
 		return -ENODEV;
 	}
-	if (init_mipi()) {
-		iounmap(lp->mem_vdma);
+
+	if (demosaic_init()) {
+		free_irq(dp->irq_num_vdma, dp->irq_dev_id_vdma);
+		dma_free_coherent(dp->dma_dev[0], dp->alloc_size_vdma, dp->virt_wb_vdma, dp->phys_wb_vdma);
+		iounmap(dp->reg_vdma);
+		return -ENODEV;
+	}
+
+	if (mipicsi_init()) {
+		free_irq(dp->irq_num_vdma, dp->irq_dev_id_vdma);
+		dma_free_coherent(dp->dma_dev[0], dp->alloc_size_vdma, dp->virt_wb_vdma, dp->phys_wb_vdma);
+		iounmap(dp->reg_vdma);
 		return -ENODEV;
 	}
 	return 0;
@@ -148,42 +164,49 @@ static int init_hw(struct zynq_v4l2_local *lp)
 static int zynq_v4l2_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
-	struct zynq_v4l2_local *lp;
+	struct zynq_v4l2_data *dp;
 
 	dev_info(dev, "Device Tree Probing");
 	printk(KERN_INFO "%s\n", __FUNCTION__);
 
-	lp = (struct zynq_v4l2_local *)kmalloc(sizeof(struct zynq_v4l2_local), GFP_KERNEL);
-	if (!lp) {
+	dp = (struct zynq_v4l2_data *)kmalloc(sizeof(struct zynq_v4l2_data), GFP_KERNEL);
+	if (!dp) {
 		dev_err(dev, "Could not allocate memory\n");
 		return -ENOMEM;
 	}
-	dev_set_drvdata(dev, lp);
+	dev_set_drvdata(dev, dp);
 
-	if (init_hw(lp)) {
-		dev_err(dev, "Could not initialize HW\n");
+	if (zynq_v4l2_create_cdev(&pdev->dev, dp)) {
+		dev_err(dev, "zynq_v4l2_create_cdev failed\n");
+		kfree(dp);
+		dev_set_drvdata(dev, NULL);
+		return -EBUSY;
+	}
+
+	if (hw_init(dp)) {
+		dev_err(dev, "hw_init failed\n");
+		zynq_v4l2_delete_cdev(dp);
+		kfree(dp);
+		dev_set_drvdata(dev, NULL);
 		return -ENODEV;
 	}
 
-	if (!zynq_v4l2_create_cdev(lp)) {
-		return 0;
-	}
-
-	iounmap(lp->mem_vdma);
-	kfree(lp);
-	dev_set_drvdata(dev, NULL);
-	return -EBUSY;
+	return 0;
 }
 
 static int zynq_v4l2_remove(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
-	struct zynq_v4l2_local *lp = dev_get_drvdata(dev);
+	struct zynq_v4l2_data *dp = dev_get_drvdata(dev);
+	extern int frame_cnt_intr;
 
 	printk(KERN_INFO "%s\n", __FUNCTION__);
-	zynq_v4l2_deletel_cdev(lp);
-	iounmap(lp->mem_vdma);
-	kfree(lp);
+	printk(KERN_INFO "frame_cnt_intr = %d\n", frame_cnt_intr);
+	zynq_v4l2_delete_cdev(dp);
+	free_irq(dp->irq_num_vdma, dp->irq_dev_id_vdma);
+	dma_free_coherent(dp->dma_dev[0], dp->alloc_size_vdma, dp->virt_wb_vdma, dp->phys_wb_vdma);
+	iounmap(dp->reg_vdma);
+	kfree(dp);
 	dev_set_drvdata(dev, NULL);
 	return 0;
 }
