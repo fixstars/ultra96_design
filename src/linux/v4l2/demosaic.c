@@ -7,7 +7,7 @@
 #include "xdemosaic_root.h"
 #include "zynq_v4l2.h"
 
-int demosaic_init(void)
+int zynq_v4l2_demosaic_init(void)
 {
 	XDemosaic_root ins;
 	void __iomem *mem;

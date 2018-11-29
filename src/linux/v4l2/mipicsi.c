@@ -4,7 +4,7 @@
 #include "xcsi.h"
 #include "zynq_v4l2.h"
 
-int mipicsi_init(void)
+int zynq_v4l2_mipicsi_init(void)
 {
 	XCsi ins;
 	XCsi_Config *psConf;

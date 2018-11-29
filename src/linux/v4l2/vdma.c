@@ -1,6 +1,7 @@
 #include <linux/kernel.h>
 #include <linux/dma-mapping.h>
 #include <linux/interrupt.h>
+#include <linux/of_irq.h>
 #include <asm/io.h>
 #include "xparameters.h"
 #include "xaxivdma.h"
@@ -12,12 +13,13 @@ extern int vdma_h_res, vdma_v_res;
 /* too large to be placed on stack */
 static XAxiVdma inst;
 
-static irqreturn_t vdma_isr(int irq, void *dev)
+static irqreturn_t zynq_v4l2_vdma_isr(int irq, void *dev)
 {
 	XAxiVdma_Channel *Channel;
 	u32 PendingIntr;
+    struct zynq_v4l2_data *dp = (struct zynq_v4l2_data *)dev;
 
-	Channel = XAxiVdma_GetChannel(&inst, XAXIVDMA_WRITE);
+	Channel = XAxiVdma_GetChannel(dp->inst_vdma, XAXIVDMA_WRITE);
 	PendingIntr = XAxiVdma_ChannelGetPendingIntr(Channel);
 	PendingIntr &= XAxiVdma_ChannelGetEnabledIntr(Channel);
 
@@ -30,7 +32,17 @@ static irqreturn_t vdma_isr(int irq, void *dev)
     return IRQ_HANDLED;
 }
 
-int vdma_init(struct zynq_v4l2_data *dp)
+void zynq_v4l2_vdma_intr_enable(struct zynq_v4l2_data *dp)
+{
+	XAxiVdma_IntrEnable(dp->inst_vdma, XAXIVDMA_IXR_ALL_MASK, XAXIVDMA_WRITE);
+}
+
+void zynq_v4l2_vdma_intr_disable(struct zynq_v4l2_data *dp)
+{
+	XAxiVdma_IntrDisable(dp->inst_vdma, XAXIVDMA_IXR_ALL_MASK, XAXIVDMA_WRITE);
+}
+
+int zynq_v4l2_vdma_init(struct device *dev, struct zynq_v4l2_data *dp)
 {
 	XAxiVdma_Config *psConf;
 	XStatus          Status;
@@ -43,6 +55,7 @@ int vdma_init(struct zynq_v4l2_data *dp)
 
 	printk(KERN_INFO "%s\n", __FUNCTION__);
 
+    dp->inst_vdma = &inst;
 	dp->reg_vdma = ioremap_nocache(XPAR_AXIVDMA_0_BASEADDR, XPAR_AXIVDMA_0_HIGHADDR - XPAR_AXIVDMA_0_BASEADDR);
 	if (!dp->reg_vdma) {
 		printk(KERN_ERR "ioremap_nocache failed\n");
@@ -63,15 +76,16 @@ int vdma_init(struct zynq_v4l2_data *dp)
 		goto fail2;
 	}
 
-	if (dp->dma_dev[0]->dma_mask == NULL) {
-		dp->dma_dev[0]->dma_mask = &dp->dma_dev[0]->coherent_dma_mask;
+	if (dp->dma_dev->dma_mask == NULL) {
+		dp->dma_dev->dma_mask = &dp->dma_dev->coherent_dma_mask;
 	}
-	dma_set_mask(dp->dma_dev[0], DMA_BIT_MASK(32));
-	dma_set_coherent_mask(dp->dma_dev[0], DMA_BIT_MASK(32));
+	dma_set_mask(dp->dma_dev, DMA_BIT_MASK(32));
+	dma_set_coherent_mask(dp->dma_dev, DMA_BIT_MASK(32));
 
-	dp->alloc_size_vdma = vdma_h_res * inst.WriteChannel.StreamWidth * vdma_v_res * inst.MaxNumFrames;
-	//printk(KERN_INFO "alloc_size = %ld\n", dp->alloc_size_vdma);
-	dp->virt_wb_vdma = dma_alloc_coherent(dp->dma_dev[0], dp->alloc_size_vdma, &dp->phys_wb_vdma, GFP_KERNEL);
+	dp->frame_size = vdma_h_res * inst.WriteChannel.StreamWidth * vdma_v_res;
+	dp->alloc_size_wb_vdma = dp->frame_size * inst.MaxNumFrames;
+	//printk(KERN_INFO "alloc_size = %ld\n", dp->alloc_size_wb_vdma);
+	dp->virt_wb_vdma = dma_alloc_coherent(dp->dma_dev, dp->alloc_size_wb_vdma, &dp->phys_wb_vdma, GFP_KERNEL);
 	if (IS_ERR_OR_NULL(dp->virt_wb_vdma)) {
 		int retval = PTR_ERR(dp->virt_wb_vdma);
 		printk(KERN_ERR "dma_alloc_coherent failed, ret = %d\n", retval);
@@ -81,7 +95,7 @@ int vdma_init(struct zynq_v4l2_data *dp)
 	//printk(KERN_INFO "virt_wb_vdma = %p, phys_wb_vdma = 0x%llx\n", dp->virt_wb_vdma, dp->phys_wb_vdma);
 
 	/* invalidate cache */
-	dma_sync_single_for_device(dp->dma_dev[0], dp->phys_wb_vdma, dp->alloc_size_vdma, DMA_FROM_DEVICE);
+	dma_sync_single_for_device(dp->dma_dev, dp->phys_wb_vdma, dp->alloc_size_wb_vdma, DMA_FROM_DEVICE);
 
 	XAxiVdma_ChannelReset(&inst.WriteChannel);
 
@@ -124,25 +138,22 @@ int vdma_init(struct zynq_v4l2_data *dp)
 		goto fail1;
 	}
 
-    dp->irq_num_vdma = XPAR_FABRIC_AXI_VDMA_0_S2MM_INTROUT_INTR;
-    dp->irq_dev_id_vdma = &dp->irq_num_vdma;
-    rc = request_irq(dp->irq_num_vdma, vdma_isr, IRQF_SHARED | IRQF_NO_SUSPEND, "vdma", dp->irq_dev_id_vdma);
-    if (rc) {
-        printk(KERN_ERR "request_irq = %d\n", rc);
-        goto fail1;
-    }
+	dp->irq_num_vdma = irq_of_parse_and_map(dev->of_node, 0);
+	rc = request_irq(dp->irq_num_vdma, zynq_v4l2_vdma_isr, IRQF_SHARED | IRQF_NO_SUSPEND, "vdma", dp);
+	if (rc) {
+		printk(KERN_ERR "request_irq = %d\n", rc);
+		goto fail1;
+	}
 
 	//Clear errors in SR
 	XAxiVdma_ClearChannelErrors(&inst.WriteChannel, XAXIVDMA_SR_ERR_ALL_MASK);
 	//Unmask error interrupts
 	XAxiVdma_MaskS2MMErrIntr(&inst, ~XAXIVDMA_S2MM_IRQ_ERR_ALL_MASK, XAXIVDMA_WRITE);
-	//Enable write channel error and frame count interrupts
-	XAxiVdma_IntrEnable(&inst, XAXIVDMA_IXR_ERROR_MASK | XAXIVDMA_IXR_COMPLETION_MASK, XAXIVDMA_WRITE);
 
 	Status = XAxiVdma_DmaStart(&inst, XAXIVDMA_WRITE);
 	if (Status != XST_SUCCESS) {
 		printk(KERN_ERR "XAxiVdma_DmaStart failed\n");
-        free_irq(dp->irq_num_vdma, dp->irq_dev_id_vdma);
+        free_irq(dp->irq_num_vdma, dp);
 		rc = -ENODEV;
 		goto fail1;
 	}
@@ -150,7 +161,7 @@ int vdma_init(struct zynq_v4l2_data *dp)
 	return 0;
 
 fail1:
-	dma_free_coherent(dp->dma_dev[0], dp->alloc_size_vdma, dp->virt_wb_vdma, dp->phys_wb_vdma);
+	dma_free_coherent(dp->dma_dev, dp->alloc_size_wb_vdma, dp->virt_wb_vdma, dp->phys_wb_vdma);
 fail2:
 	iounmap(dp->reg_vdma);
 	return rc;
