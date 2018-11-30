@@ -34,5 +34,6 @@ void zynq_v4l2_vdma_intr_enable(struct zynq_v4l2_data *dp);
 void zynq_v4l2_vdma_intr_disable(struct zynq_v4l2_data *dp);
 int zynq_v4l2_demosaic_init(void);
 int zynq_v4l2_mipicsi_init(void);
+int zynq_v4l2_find_oldest_slot(uint32_t active_bits, int latest);
 
 #endif /* ZYNQ_V4L2_H */

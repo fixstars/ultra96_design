@@ -17,7 +17,8 @@ static irqreturn_t zynq_v4l2_vdma_isr(int irq, void *dev)
 {
 	XAxiVdma_Channel *Channel;
 	u32 PendingIntr;
-    struct zynq_v4l2_data *dp = (struct zynq_v4l2_data *)dev;
+	struct zynq_v4l2_data *dp = (struct zynq_v4l2_data *)dev;
+	int slot, wb;
 
 	Channel = XAxiVdma_GetChannel(dp->inst_vdma, XAXIVDMA_WRITE);
 	PendingIntr = XAxiVdma_ChannelGetPendingIntr(Channel);
@@ -27,6 +28,16 @@ static irqreturn_t zynq_v4l2_vdma_isr(int irq, void *dev)
 
 	if (PendingIntr & XAXIVDMA_IXR_COMPLETION_MASK) {
 		frame_cnt_intr++;
+		slot = zynq_v4l2_find_oldest_slot(dp->queue_bits, dp->latest_frame);
+		if (slot != -1) {
+			wb = XAxiVdma_CurrFrameStore(dp->inst_vdma, XAXIVDMA_WRITE);
+			memcpy((void *)((unsigned long)dp->user_mem + dp->frame_size * slot),
+				   (void *)(dp->phys_wb_vdma + dp->frame_size * wb),
+				   dp->frame_size);
+			dp->latest_frame = slot;
+			dp->active_bits |= (1 << slot);
+			wake_up_interruptible(&dp->waitq);
+		}
 	}
 
     return IRQ_HANDLED;

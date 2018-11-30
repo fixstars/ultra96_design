@@ -77,11 +77,11 @@ static ssize_t zynq_v4l2_write(struct file *filp, const char __user *buf, size_t
 	return 0;
 }
 
-static int find_oldest(uint32_t active_bits, int latest)
+int zynq_v4l2_find_oldest_slot(uint32_t active_bits, int latest)
 {
 	uint32_t bits = active_bits;
 
-	bits &= ~((latest << 1) - 1);
+	bits &= ~(((1 << latest) << 1) - 1);
 	if (bits ) {
 		return __builtin_ctz(bits);
 	} else if (active_bits) {
@@ -99,7 +99,7 @@ static unsigned int zynq_v4l2_poll(struct file *filp, struct poll_table_struct *
 	printk(KERN_INFO "%s\n", __FUNCTION__);	
 
 	spin_lock_irq(&dp->lock);
-	if (find_oldest(dp->active_bits, dp->latest_frame) == -1) {
+	if (zynq_v4l2_find_oldest_slot(dp->active_bits, dp->latest_frame) == -1) {
 		do_wait = 1;
 	} else {
 		do_wait = 0;
@@ -109,7 +109,7 @@ static unsigned int zynq_v4l2_poll(struct file *filp, struct poll_table_struct *
 	if (do_wait) {
 		poll_wait(filp, &dp->waitq, waitp);
 		spin_lock_irq(&dp->lock);
-		if (find_oldest(dp->active_bits, dp->latest_frame) == -1) {
+		if (zynq_v4l2_find_oldest_slot(dp->active_bits, dp->latest_frame) == -1) {
 			rc = 0;
 		} else {
 			rc = (POLLIN | POLLRDNORM);
@@ -128,7 +128,8 @@ static long zynq_v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 	struct v4l2_requestbuffers req;
 	struct v4l2_buffer buf;
 	struct zynq_v4l2_data *dp = filp->private_data;
-	int rc, oldest;
+	int rc, slot;
+	unsigned long offset;
 
 	printk(KERN_INFO "%s\n", __FUNCTION__);
 
@@ -182,6 +183,12 @@ static long zynq_v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 		if (!dp->user_mem) {
 			return -ENOMEM;
 		}
+		/* assign physical memory */
+		offset = 0;
+		while (offset < dp->frame_size * req.count) {
+			*((uint32_t *)((size_t)dp->user_mem + offset)) = 0;
+			offset += PAGE_SIZE;
+		}
 		return 0;
 	case VIDIOC_QUERYBUF:
 		if (raw_copy_from_user(&buf, (void __user *)arg, sizeof(buf))) {
@@ -233,13 +240,13 @@ static long zynq_v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 			return -EINVAL;
 		}
 		spin_lock_irq(&dp->lock);
-		oldest = find_oldest(dp->active_bits, dp->latest_frame);
-		if (oldest == -1 ) {
+		slot = zynq_v4l2_find_oldest_slot(dp->active_bits, dp->latest_frame);
+		if (slot == -1 ) {
 			rc = -EAGAIN;
 		} else {
-			dp->queue_bits &= ~(1 << oldest);
-			dp->active_bits &= ~(1 << oldest);
-			buf.index = oldest;
+			dp->queue_bits &= ~(1 << slot);
+			dp->active_bits &= ~(1 << slot);
+			buf.index = slot;
 			rc = 0;
 		}
 		spin_unlock_irq(&dp->lock);
@@ -255,9 +262,39 @@ static long zynq_v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 	}
 }
 
+static int zynq_v4l2_vma_fault(struct vm_fault *vmf)
+{
+	struct page *page;
+	unsigned long offset = vmf->pgoff << PAGE_SHIFT;
+	struct zynq_v4l2_data *dp = vmf->vma->vm_private_data;
+
+	if (offset > dp->frame_size * dp->user_frame_count) {
+		return VM_FAULT_SIGBUS;
+	}
+
+	page = vmalloc_to_page((void *)((unsigned long)dp->user_mem + offset));
+	get_page(page);
+	vmf->page = page;
+
+	return 0;
+}
+
+static struct vm_operations_struct zynq_v4l2_vm_ops = {
+	.fault = zynq_v4l2_vma_fault,
+};
+
 static int zynq_v4l2_mmap(struct file *filp, struct vm_area_struct *vma)
 {
+	struct zynq_v4l2_data *dp = filp->private_data;
+
 	printk(KERN_INFO "%s\n", __FUNCTION__);
+
+	if (vma->vm_pgoff + vma_pages(vma) > ((dp->frame_size * dp->user_frame_count + PAGE_SIZE - 1) >> PAGE_SHIFT)) {
+		return -EINVAL;
+	}
+
+	vma->vm_private_data = dp;
+	vma->vm_ops = &zynq_v4l2_vm_ops;
 
 	return 0;
 }
