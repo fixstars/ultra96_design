@@ -8,6 +8,7 @@
 #include <linux/device.h>
 #include <asm/current.h>
 #include <asm/uaccess.h>
+#include <asm/cacheflush.h>
 #include <linux/of_address.h>
 #include <linux/of_device.h>
 #include <linux/of_platform.h>
@@ -27,6 +28,20 @@ module_param(vdma_h_res, int, S_IRUGO);
 module_param(vdma_v_res, int, S_IRUGO);
 MODULE_PARM_DESC(vdma_h_res, "v4l2 buffer width");
 MODULE_PARM_DESC(vdma_v_res, "v4l2 buffer height");
+
+int zynq_v4l2_find_oldest_slot(uint32_t slot_bits, int latest)
+{
+	uint32_t bits = slot_bits;
+
+	bits &= ~(((1 << latest) << 1) - 1);
+	if (bits ) {
+		return __builtin_ctz(bits);
+	} else if (slot_bits) {
+		return __builtin_ctz(slot_bits);
+	} else {
+		return -1;
+	}
+}
 
 static int zynq_v4l2_open(struct inode *inode, struct file *filp)
 {
@@ -48,6 +63,10 @@ static int zynq_v4l2_close(struct inode *inode, struct file *filp)
 	struct zynq_v4l2_data *dp = filp->private_data;
 
 	printk(KERN_INFO "%s\n", __FUNCTION__);
+
+	zynq_v4l2_vdma_intr_disable(dp);
+	dp->queue_bits = 0;
+	dp->active_bits = 0;
 	if (dp->user_mem) {
 		vfree(dp->user_mem);
 		dp->user_mem = NULL;
@@ -75,20 +94,6 @@ static ssize_t zynq_v4l2_write(struct file *filp, const char __user *buf, size_t
 	printk(KERN_INFO "%s\n", __FUNCTION__);	
 
 	return 0;
-}
-
-int zynq_v4l2_find_oldest_slot(uint32_t active_bits, int latest)
-{
-	uint32_t bits = active_bits;
-
-	bits &= ~(((1 << latest) << 1) - 1);
-	if (bits ) {
-		return __builtin_ctz(bits);
-	} else if (active_bits) {
-		return __builtin_ctz(active_bits);
-	} else {
-		return -1;
-	}
 }
 
 static unsigned int zynq_v4l2_poll(struct file *filp, struct poll_table_struct *waitp)
@@ -127,9 +132,11 @@ static long zynq_v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 	struct v4l2_format fmt;
 	struct v4l2_requestbuffers req;
 	struct v4l2_buffer buf;
+	enum   v4l2_buf_type type;
 	struct zynq_v4l2_data *dp = filp->private_data;
 	int rc, slot;
 	unsigned long offset;
+	//void *page_addr;
 
 	printk(KERN_INFO "%s\n", __FUNCTION__);
 
@@ -180,6 +187,7 @@ static long zynq_v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 		}
 		dp->user_frame_count = req.count;
 		dp->user_mem = vmalloc(dp->frame_size * req.count);
+		printk(KERN_INFO "dp->user_mem = %p\n", dp->user_mem);
 		if (!dp->user_mem) {
 			return -ENOMEM;
 		}
@@ -224,6 +232,11 @@ static long zynq_v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 		}
 		spin_lock_irq(&dp->lock);
 		dp->queue_bits |= (1 << buf.index);
+		printk(KERN_INFO "QBUF: dp->queue_bits = %d, dp->active_bits = %d\n", dp->queue_bits, dp->active_bits);
+		#if 0
+		page_addr = virt_to_page((void *)((unsigned long)dp->user_mem + dp->frame_size * buf.index));
+		__inval_dcache_area(page_addr, dp->frame_size);
+		#endif
 		spin_unlock_irq(&dp->lock);
 		return 0;
 	case VIDIOC_DQBUF:
@@ -247,14 +260,33 @@ static long zynq_v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 			dp->queue_bits &= ~(1 << slot);
 			dp->active_bits &= ~(1 << slot);
 			buf.index = slot;
+			if (raw_copy_to_user((void __user *)arg, &buf, sizeof(buf))) {
+				return -EFAULT;
+			}
+			#if 0
+			page_addr = virt_to_page((void *)((unsigned long)dp->user_mem + dp->frame_size * slot));
+			__flush_dcache_area(page_addr, dp->frame_size);
+			#endif
 			rc = 0;
 		}
 		spin_unlock_irq(&dp->lock);
 		return 0;
 	case VIDIOC_STREAMON:
+		if (raw_copy_from_user(&type, (void __user *)arg, sizeof(type))) {
+			return -EFAULT;
+		}
+		if (type != V4L2_BUF_TYPE_VIDEO_CAPTURE) {
+			return -EINVAL;
+		}
 		zynq_v4l2_vdma_intr_enable(dp);
 		return 0;
 	case VIDIOC_STREAMOFF:
+		if (raw_copy_from_user(&type, (void __user *)arg, sizeof(type))) {
+			return -EFAULT;
+		}
+		if (type != V4L2_BUF_TYPE_VIDEO_CAPTURE) {
+			return -EINVAL;
+		}
 		zynq_v4l2_vdma_intr_disable(dp);
 		return 0;
 	default:

@@ -31,8 +31,11 @@ static irqreturn_t zynq_v4l2_vdma_isr(int irq, void *dev)
 		slot = zynq_v4l2_find_oldest_slot(dp->queue_bits, dp->latest_frame);
 		if (slot != -1) {
 			wb = XAxiVdma_CurrFrameStore(dp->inst_vdma, XAXIVDMA_WRITE);
+			#if 0
+			wb = (wb + dp->inst_vdma->MaxNumFrames - 1) % dp->inst_vdma->MaxNumFrames;
+			#endif
 			memcpy((void *)((unsigned long)dp->user_mem + dp->frame_size * slot),
-				   (void *)(dp->phys_wb_vdma + dp->frame_size * wb),
+				   (void *)(dp->virt_wb_vdma + dp->frame_size * wb),
 				   dp->frame_size);
 			dp->latest_frame = slot;
 			dp->active_bits |= (1 << slot);
