@@ -4,52 +4,59 @@
 #include "xcsi.h"
 #include "zynq_v4l2.h"
 
+#define MIPICSI_BASEADDR(num)  XPAR_MIPI_CSI2_RX_SUBSYST_ ## num ## _BASEADDR
+#define MIPICSI_HIGHADDR(num)  XPAR_MIPI_CSI2_RX_SUBSYST_ ## num ## _HIGHADDR
+#define MIPICSI_DEVICE_ID(num) XPAR_MIPI_CSI2_RX_SUBSYST_ ## num ## _DEVICE_ID
+
 int zynq_v4l2_mipicsi_init(void)
 {
+	int minor;
 	XCsi ins;
 	XCsi_Config *psConf;
 	void __iomem *mem;
-	int rc;
 	XStatus Status;
+	uint32_t baseaddr[MINOR_NUM] = {MIPICSI_BASEADDR(0)};
+	uint32_t highaddr[MINOR_NUM] = {MIPICSI_HIGHADDR(0)};
+	uint32_t device_id[MINOR_NUM] = {MIPICSI_DEVICE_ID(0)};
 
 	printk(KERN_INFO "%s\n", __FUNCTION__);
 
-	mem = ioremap_nocache(XPAR_MIPI_CSI2_RX_SUBSYST_0_BASEADDR, XPAR_MIPI_CSI2_RX_SUBSYST_0_HIGHADDR - XPAR_MIPI_CSI2_RX_SUBSYST_0_BASEADDR);
-	if (!mem) {
-		printk(KERN_ERR "ioremap_nocache failed\n");
-		return -ENOMEM;
+	for (minor = 0; minor < MINOR_NUM; minor++) {
+		mem = ioremap_nocache(baseaddr[minor], highaddr[minor] - baseaddr[minor]);
+		if (!mem) {
+			printk(KERN_ERR "ioremap_nocache failed %d\n", minor);
+			return -ENOMEM;
+		}
+
+		psConf = XCsi_LookupConfig(device_id[minor]);
+		if (!psConf) {
+			printk(KERN_ERR "XCsiSs_LookupConfig failed %d\n", minor);
+			iounmap(mem);
+			return -ENODEV;
+		}
+
+		Status = XCsi_CfgInitialize(&ins, psConf, (UINTPTR)mem);
+		if (Status != XST_SUCCESS){
+			printk(KERN_ERR "XCsiSs_CfgInitialize failed %d\n", minor);
+			iounmap(mem);
+			return -ENODEV;
+		}
+
+		Status = XCsi_Reset(&ins);
+		if (Status != XST_SUCCESS) {
+			printk(KERN_ERR "XCsiSs_Reset failed %d\n", minor);
+			iounmap(mem);
+			return -ENODEV;
+		}
+
+		Status = XCsi_Activate(&ins, XCSI_ENABLE);
+		if (Status != XST_SUCCESS) {
+			printk(KERN_ERR "XCsiSs_Activate failed %d\n", minor);
+			iounmap(mem);
+			return -ENODEV;
+		}
+		iounmap(mem);
 	}
 
-	psConf = XCsi_LookupConfig(XPAR_MIPI_CSI2_RX_SUBSYST_0_DEVICE_ID);
-	if (!psConf) {
-		printk(KERN_ERR "XCsiSs_LookupConfig failed\n");
-		rc = -ENODEV;
-		goto out;
-	}
-
-	Status = XCsi_CfgInitialize(&ins, psConf, (UINTPTR)mem);
-	if (Status != XST_SUCCESS){
-		printk(KERN_ERR "XCsiSs_CfgInitialize failed\n");
-		rc = -ENODEV;
-		goto out;
-	}
-
-	Status = XCsi_Reset(&ins);
-	if (Status != XST_SUCCESS) {
-		printk(KERN_ERR "XCsiSs_Reset failed\n");
-		rc = -ENODEV;
-		goto out;
-	}
-
-	Status = XCsi_Activate(&ins, XCSI_ENABLE);
-	if (Status != XST_SUCCESS) {
-		printk(KERN_ERR "XCsiSs_Activate failed\n");
-		rc = -ENODEV;
-		goto out;
-	}
-	rc = 0;
-
-out:
-	iounmap(mem);
-	return rc;
+	return 0;
 }

@@ -18,10 +18,7 @@
 #define MINOR_NUM   1
 
 struct zynq_v4l2_data {
-	unsigned int       major;
-	struct cdev        cdev;
 	struct device     *dma_dev;
-	struct class      *class;
 	size_t             frame_size;
 	int                user_frame_count;
 	uint32_t           queue_bits;
@@ -41,7 +38,15 @@ struct zynq_v4l2_data {
 	int                irq_num_vdma;
 };
 
-int zynq_v4l2_vdma_init(struct device *dev, struct zynq_v4l2_data *dp);
+struct zynq_v4l2_sys_data {
+	unsigned int          major;
+	struct class         *class;
+	struct cdev           cdev;
+	bool                  cdev_inited;
+	struct zynq_v4l2_data dev[MINOR_NUM];
+};
+
+int zynq_v4l2_vdma_init(struct device *dev, struct zynq_v4l2_sys_data *sp);
 void zynq_v4l2_vdma_intr_enable(struct zynq_v4l2_data *dp);
 void zynq_v4l2_vdma_intr_disable(struct zynq_v4l2_data *dp);
 int zynq_v4l2_demosaic_init(void);
