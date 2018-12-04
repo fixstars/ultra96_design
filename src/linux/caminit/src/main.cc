@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "camctrl.h"
+#include "caminit.h"
 
 int main(int argc, char *argv[])
 {

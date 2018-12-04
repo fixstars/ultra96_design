@@ -11,7 +11,6 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#include "camctrl.h"
 
 #define BUFSIZE (640*480*3)
 #define FRAME_NUM 2
@@ -86,7 +85,7 @@ int main()
             rc = xioctl(fd, VIDIOC_DQBUF, &buf);
             printf("VIDIOC_DQBUF = %d, buf.index = %d\n", rc, buf.index);
             if (buf.index < FRAME_NUM) {
-                frame.data = (unsigned char *)user_frame[0];
+                frame.data = (unsigned char *)user_frame[buf.index];
                 std::stringstream ss;
                 ss << "./" << i << ".png";
                 cv::imwrite(ss.str(), frame);

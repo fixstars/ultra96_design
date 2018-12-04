@@ -4,13 +4,13 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CC_SRCS += \
-../src/camctrl.cc ../src/camcfg.cc ../src/ov5640.cc ../src/imx219.cc
+../src/caminit.cc ../src/camcfg.cc ../src/ov5640.cc ../src/imx219.cc
 
 CC_DEPS += \
-./src/camctrl.d ./src/camcfg.d ./src/ov5640.d ./src/imx219.d 
+./src/caminit.d ./src/camcfg.d ./src/ov5640.d ./src/imx219.d 
 
 OBJS += \
-./src/camctrl.o ./src/camcfg.o ./src/ov5640.o ./src/imx219.o 
+./src/caminit.o ./src/camcfg.o ./src/ov5640.o ./src/imx219.o 
 
 MAIN_DEPS += \
 ./src/main.d 

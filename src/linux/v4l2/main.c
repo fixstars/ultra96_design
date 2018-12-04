@@ -47,7 +47,8 @@ static int zynq_v4l2_open(struct inode *inode, struct file *filp)
 {
 	struct zynq_v4l2_data *dp;
 
-	printk(KERN_INFO "%s\n", __FUNCTION__);
+	PRINTK(KERN_INFO "%s\n", __FUNCTION__);
+
 	dp = container_of(inode->i_cdev, struct zynq_v4l2_data, cdev);
 	if (dp == NULL) {
 		printk(KERN_ERR "container_of failed\n");
@@ -62,13 +63,19 @@ static int zynq_v4l2_close(struct inode *inode, struct file *filp)
 {
 	struct zynq_v4l2_data *dp = filp->private_data;
 
-	printk(KERN_INFO "%s\n", __FUNCTION__);
+	PRINTK(KERN_INFO "%s\n", __FUNCTION__);
 
 	zynq_v4l2_vdma_intr_disable(dp);
+	spin_lock_irq(&dp->lock);
 	dp->queue_bits = 0;
 	dp->active_bits = 0;
+	spin_unlock_irq(&dp->lock);
 	if (dp->user_mem) {
+		#ifdef USE_VMALLOC
 		vfree(dp->user_mem);
+		#else /* !USE_VMALLOC */
+		dma_free_coherent(dp->dma_dev, dp->frame_size * dp->user_frame_count, dp->user_mem, dp->user_phys_mem);
+		#endif /* !USE_VMALLOC */
 		dp->user_mem = NULL;
 	}
 
@@ -78,11 +85,16 @@ static int zynq_v4l2_close(struct inode *inode, struct file *filp)
 static ssize_t zynq_v4l2_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
 	struct zynq_v4l2_data *dp = filp->private_data;
+	int wb;
 
 	if (count > vdma_h_res * vdma_v_res * 3) {
 		return -EINVAL;
 	}
-	if (raw_copy_to_user(buf, dp->virt_wb_vdma, count) != 0) {
+
+	wb = XAxiVdma_CurrFrameStore(dp->inst_vdma, XAXIVDMA_WRITE);
+	wb = (wb + dp->inst_vdma->MaxNumFrames - 1) % dp->inst_vdma->MaxNumFrames;
+	printk(KERN_INFO "%s wb = %d\n", __FUNCTION__, wb);
+	if (raw_copy_to_user(buf, dp->virt_wb_vdma + dp->frame_size * wb, count) != 0) {
 		return -EFAULT;
 	}
 
@@ -91,7 +103,7 @@ static ssize_t zynq_v4l2_read(struct file *filp, char __user *buf, size_t count,
 
 static ssize_t zynq_v4l2_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
 {
-	printk(KERN_INFO "%s\n", __FUNCTION__);	
+	PRINTK(KERN_INFO "%s\n", __FUNCTION__);
 
 	return 0;
 }
@@ -99,22 +111,18 @@ static ssize_t zynq_v4l2_write(struct file *filp, const char __user *buf, size_t
 static unsigned int zynq_v4l2_poll(struct file *filp, struct poll_table_struct *waitp)
 {
 	struct zynq_v4l2_data *dp = filp->private_data;
-	int do_wait, rc;
+	int slot, rc;
 
-	printk(KERN_INFO "%s\n", __FUNCTION__);	
+	PRINTK(KERN_INFO "%s\n", __FUNCTION__);	
 
 	spin_lock_irq(&dp->lock);
-	if (zynq_v4l2_find_oldest_slot(dp->active_bits, dp->latest_frame) == -1) {
-		do_wait = 1;
-	} else {
-		do_wait = 0;
-	}
+	slot = zynq_v4l2_find_oldest_slot(dp->active_bits, dp->latest_frame);
 	spin_unlock_irq(&dp->lock);
 
-	if (do_wait) {
+	if (slot == -1) {
 		poll_wait(filp, &dp->waitq, waitp);
 		spin_lock_irq(&dp->lock);
-		if (zynq_v4l2_find_oldest_slot(dp->active_bits, dp->latest_frame) == -1) {
+		if ((slot = zynq_v4l2_find_oldest_slot(dp->active_bits, dp->latest_frame)) == -1) {
 			rc = 0;
 		} else {
 			rc = (POLLIN | POLLRDNORM);
@@ -123,6 +131,7 @@ static unsigned int zynq_v4l2_poll(struct file *filp, struct poll_table_struct *
 	} else {
 		rc = (POLLIN | POLLRDNORM);
 	}
+	PRINTK(KERN_INFO "  rc = %d, slot = %d\n", rc, slot);
 
 	return rc;
 }
@@ -135,10 +144,11 @@ static long zynq_v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 	enum   v4l2_buf_type type;
 	struct zynq_v4l2_data *dp = filp->private_data;
 	int rc, slot;
+	#ifdef USE_VMALLOC
 	unsigned long offset;
-	//void *page_addr;
+	#endif /* USE_VMALLOC */
 
-	printk(KERN_INFO "%s\n", __FUNCTION__);
+	PRINTK(KERN_INFO "%s\n", __FUNCTION__);
 
 	switch (cmd) {
 	case VIDIOC_G_FMT:
@@ -186,17 +196,23 @@ static long zynq_v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 			return -EINVAL;
 		}
 		dp->user_frame_count = req.count;
+		#ifdef USE_VMALLOC
 		dp->user_mem = vmalloc(dp->frame_size * req.count);
-		printk(KERN_INFO "dp->user_mem = %p\n", dp->user_mem);
+		#else /* !USE_VMALLOC */
+		dp->user_mem = dma_alloc_coherent(dp->dma_dev, dp->frame_size * req.count, &dp->user_phys_mem, GFP_KERNEL);
+		#endif /* !USE_VMALLOC */
+		PRINTK(KERN_INFO "dp->user_mem = %p\n", dp->user_mem);
 		if (!dp->user_mem) {
 			return -ENOMEM;
 		}
+		#ifdef USE_VMALLOC
 		/* assign physical memory */
 		offset = 0;
 		while (offset < dp->frame_size * req.count) {
 			*((uint32_t *)((size_t)dp->user_mem + offset)) = 0;
 			offset += PAGE_SIZE;
 		}
+		#endif /* USE_VMALLOC */
 		return 0;
 	case VIDIOC_QUERYBUF:
 		if (raw_copy_from_user(&buf, (void __user *)arg, sizeof(buf))) {
@@ -232,11 +248,7 @@ static long zynq_v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 		}
 		spin_lock_irq(&dp->lock);
 		dp->queue_bits |= (1 << buf.index);
-		printk(KERN_INFO "QBUF: dp->queue_bits = %d, dp->active_bits = %d\n", dp->queue_bits, dp->active_bits);
-		#if 0
-		page_addr = virt_to_page((void *)((unsigned long)dp->user_mem + dp->frame_size * buf.index));
-		__inval_dcache_area(page_addr, dp->frame_size);
-		#endif
+		PRINTK(KERN_INFO "QBUF: buf.index = %d, dp->queue_bits = %d, dp->active_bits = %d\n", buf.index, dp->queue_bits, dp->active_bits);
 		spin_unlock_irq(&dp->lock);
 		return 0;
 	case VIDIOC_DQBUF:
@@ -255,22 +267,19 @@ static long zynq_v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 		spin_lock_irq(&dp->lock);
 		slot = zynq_v4l2_find_oldest_slot(dp->active_bits, dp->latest_frame);
 		if (slot == -1 ) {
+			spin_unlock_irq(&dp->lock);
 			rc = -EAGAIN;
 		} else {
 			dp->queue_bits &= ~(1 << slot);
 			dp->active_bits &= ~(1 << slot);
-			buf.index = slot;
+			PRINTK(KERN_INFO "DQBUF: slot = %d, dp->queue_bits = %d, dp->active_bits = %d\n", slot, dp->queue_bits, dp->active_bits);			buf.index = slot;
+			spin_unlock_irq(&dp->lock);
 			if (raw_copy_to_user((void __user *)arg, &buf, sizeof(buf))) {
 				return -EFAULT;
 			}
-			#if 0
-			page_addr = virt_to_page((void *)((unsigned long)dp->user_mem + dp->frame_size * slot));
-			__flush_dcache_area(page_addr, dp->frame_size);
-			#endif
 			rc = 0;
 		}
-		spin_unlock_irq(&dp->lock);
-		return 0;
+		return rc;
 	case VIDIOC_STREAMON:
 		if (raw_copy_from_user(&type, (void __user *)arg, sizeof(type))) {
 			return -EFAULT;
@@ -304,7 +313,11 @@ static int zynq_v4l2_vma_fault(struct vm_fault *vmf)
 		return VM_FAULT_SIGBUS;
 	}
 
+	#ifdef USE_VMALLOC
 	page = vmalloc_to_page((void *)((unsigned long)dp->user_mem + offset));
+	#else /* !USE_VMALLOC */
+	page = phys_to_page(dp->user_phys_mem + offset);
+	#endif /* !USE_VMALLOC */
 	get_page(page);
 	vmf->page = page;
 
@@ -319,7 +332,7 @@ static int zynq_v4l2_mmap(struct file *filp, struct vm_area_struct *vma)
 {
 	struct zynq_v4l2_data *dp = filp->private_data;
 
-	printk(KERN_INFO "%s\n", __FUNCTION__);
+	PRINTK(KERN_INFO "%s\n", __FUNCTION__);
 
 	if (vma->vm_pgoff + vma_pages(vma) > ((dp->frame_size * dp->user_frame_count + PAGE_SIZE - 1) >> PAGE_SHIFT)) {
 		return -EINVAL;
@@ -348,7 +361,7 @@ static int zynq_v4l2_create_cdev(struct device *parent, struct zynq_v4l2_data *d
 	dev_t dev;
 	int minor;
 
-	printk(KERN_INFO "%s\n", __FUNCTION__);
+	PRINTK(KERN_INFO "%s\n", __FUNCTION__);
 
 	ret = alloc_chrdev_region(&dev, MINOR_BASE, MINOR_NUM, DRIVER_NAME);
 	if (ret != 0) {
@@ -357,7 +370,7 @@ static int zynq_v4l2_create_cdev(struct device *parent, struct zynq_v4l2_data *d
 	}
 
 	dp->major = MAJOR(dev);
-	printk(KERN_INFO " major = %d\n", dp->major);
+	PRINTK(KERN_INFO " major = %d\n", dp->major);
 	dev = MKDEV(dp->major, MINOR_BASE);
 
 	cdev_init(&dp->cdev, &zynq_v4l2_fops);
@@ -391,7 +404,8 @@ static void zynq_v4l2_delete_cdev(struct zynq_v4l2_data *dp)
 	int minor;
 	dev_t dev = MKDEV(dp->major, MINOR_BASE);
 
-	printk(KERN_INFO "%s\n", __FUNCTION__);
+	PRINTK(KERN_INFO "%s\n", __FUNCTION__);
+
 	for (minor = MINOR_BASE; minor < MINOR_BASE + MINOR_NUM; minor++) {
 		device_destroy(dp->class, MKDEV(dp->major, minor));
 	}
@@ -402,7 +416,7 @@ static void zynq_v4l2_delete_cdev(struct zynq_v4l2_data *dp)
 
 static int zynq_v4l2_hw_init(struct device *dev, struct zynq_v4l2_data *dp)
 {
-	printk(KERN_INFO "%s\n", __FUNCTION__);
+	PRINTK(KERN_INFO "%s\n", __FUNCTION__);
 
 	if (zynq_v4l2_vdma_init(dev, dp)) {
 		return -ENODEV;
@@ -457,6 +471,7 @@ static int zynq_v4l2_probe(struct platform_device *pdev)
 		dev_set_drvdata(dev, NULL);
 		return -ENODEV;
 	}
+	dp->latest_frame = dp->inst_vdma->MaxNumFrames - 1;
 
 	return 0;
 }
@@ -465,16 +480,20 @@ static int zynq_v4l2_remove(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct zynq_v4l2_data *dp = dev_get_drvdata(dev);
-	extern int frame_cnt_intr;
+
 
 	printk(KERN_INFO "%s\n", __FUNCTION__);
-	printk(KERN_INFO "frame_cnt_intr = %d\n", frame_cnt_intr);
+
 	zynq_v4l2_delete_cdev(dp);
 	free_irq(dp->irq_num_vdma, dp);
 	dma_free_coherent(dp->dma_dev, dp->alloc_size_wb_vdma, dp->virt_wb_vdma, dp->phys_wb_vdma);
 	iounmap(dp->reg_vdma);
 	if (dp->user_mem) {
+		#ifdef USE_VMALLOC
 		vfree(dp->user_mem);
+		#else /* !USE_VMALLOC */
+		dma_free_coherent(dp->dma_dev, dp->frame_size * dp->user_frame_count, dp->user_mem, dp->user_phys_mem);
+		#endif /* !USE_VMALLOC */
 	}
 	kfree(dp);
 	dev_set_drvdata(dev, NULL);
@@ -506,7 +525,7 @@ static int zynq_v4l2_init(void)
 {
 	printk(KERN_INFO "%s\n", __FUNCTION__);
 
-    return platform_driver_register(&zynq_v4l2_driver);
+	return platform_driver_register(&zynq_v4l2_driver);
 }
 
 static void zynq_v4l2_exit(void)

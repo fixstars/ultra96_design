@@ -4,6 +4,15 @@
 #include <linux/cdev.h>
 #include "xaxivdma.h"
 
+//#define DEBUG
+#ifdef DEBUG
+#define PRINTK(fmt, ...) printk(fmt, __VA_ARGS__)
+#else
+#define PRINTK(fmt, ...)
+#endif
+
+#define USE_VMALLOC
+
 #define DRIVER_NAME "v4l2"
 #define MINOR_BASE  0
 #define MINOR_NUM   1
@@ -21,6 +30,9 @@ struct zynq_v4l2_data {
 	wait_queue_head_t  waitq;
 	spinlock_t         lock;
 	void              *user_mem;
+	#ifndef USE_VMALLOC
+	dma_addr_t         user_phys_mem;
+	#endif /* USE_VMALLOC */
 	XAxiVdma          *inst_vdma;
 	void __iomem      *reg_vdma;
 	dma_addr_t         phys_wb_vdma;

@@ -5,7 +5,7 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <linux/i2c-dev.h>
-#include "camctrl.h"
+#include "caminit.h"
 #include "camcfg.h"
 
 static config_t cfg_ov5640_advanced_awb_[] =

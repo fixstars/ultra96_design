@@ -8,7 +8,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include "camctrl.h"
+#include "caminit.h"
 #include "camcfg.h"
 
 static int (*init_camera[])(e_resolution resolution) = {

@@ -29,9 +29,6 @@ endif
 all: caminit
 
 # Tool invocations
-libcamctrl.so: $(OBJS)
-	aarch64-linux-gnu-gcc -o $@ -shared $(OBJS) $(USER_OBJS) -L ${BSP_DIR}/lib/ -Wl,-no-enum-size-warning,-lc,-lxil
-
 caminit: $(MAIN_OBJS)  $(USER_OBJS) $(OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM v7 gcc linker'
@@ -41,7 +38,7 @@ caminit: $(MAIN_OBJS)  $(USER_OBJS) $(OBJS)
 
 # Other Targets
 clean:
-	-$(RM) $(EXECUTABLES)$(OBJS)$(S_UPPER_DEPS)$(CC_DEPS)$(MAIN_OBJS)$(MAIN_DEPS) libcamctrl.so caminit
+	-$(RM) $(EXECUTABLES)$(OBJS)$(S_UPPER_DEPS)$(CC_DEPS)$(MAIN_OBJS)$(MAIN_DEPS) caminit
 	-@echo ' '
 
 .PHONY: all clean dependents
