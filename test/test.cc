@@ -14,6 +14,11 @@
 
 #define BUFSIZE (640*480*3)
 #define FRAME_NUM 2
+#define USE_USERPTR
+
+#ifdef USE_USERPTR
+unsigned char *userptr[FRAME_NUM][BUFSIZE];
+#endif /* USE_USERPTR */
 
 static int xioctl(int fd, int request, void *arg){
     int rc;
@@ -35,7 +40,7 @@ int main()
 
     fd = open("/dev/video0", O_RDWR);
     if (fd < 0) {
-        fprintf(stderr, "open = %d\n", fd);
+        fprintf(stderr, "open = %d, errno = %d\n", fd, errno);
         return -1;
     }
 
@@ -48,22 +53,32 @@ int main()
     rc = xioctl(fd, VIDIOC_S_FMT, &fmt);
     printf("VIDIOC_S_FMT = %d\n", rc);
 
+    memset(&buf, 0, sizeof(buf));
+    #ifndef USE_USERPTR
     memset(&req, 0, sizeof(req));
     req.count = FRAME_NUM;
     req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     req.memory = V4L2_MEMORY_MMAP;
     rc = xioctl(fd, VIDIOC_REQBUFS, &req);
     printf("VIDIOC_REQBUFS = %d\n", rc);
-
-    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buf.memory = V4L2_MEMORY_MMAP;
+    #else /* USE_USERPTR */
+    buf.memory = V4L2_MEMORY_USERPTR;
+    #endif /* USE_USERPTR */
+    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     for (int i = 0; i < FRAME_NUM; i++) {
+        #ifndef USE_USERPTR
         buf.index = i;
         rc = xioctl(fd, VIDIOC_QUERYBUF, &buf);
         printf("VIDIOC_QUERYBUF = %d, i= %d, buf.m.offset = %d, buf.length = %d\n", rc, i, buf.m.offset, buf.length);
         user_frame[i] = mmap(NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, buf.m.offset);
         printf("user_frame[%d] = %p\n", i, user_frame[i]);
         rc = xioctl(fd, VIDIOC_QBUF, &buf);
+        #else /* USE_USERPTR */
+        buf.index = i;
+        buf.m.userptr = (unsigned long)userptr[i];
+        rc = xioctl(fd, VIDIOC_QBUF, &buf);
+        #endif /* USE_USERPTR */
         printf("VIDIOC_QBUF = %d\n", rc);
     }
     type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -85,7 +100,12 @@ int main()
             rc = xioctl(fd, VIDIOC_DQBUF, &buf);
             printf("VIDIOC_DQBUF = %d, buf.index = %d\n", rc, buf.index);
             if (buf.index < FRAME_NUM) {
+                #ifdef USE_USERPTR
+                frame.data = (unsigned char *)userptr[buf.index];
+                buf.m.userptr = (unsigned long)userptr[buf.index];
+                #else /* !USE_USERPTR */
                 frame.data = (unsigned char *)user_frame[buf.index];
+                #endif /* !USE_USERPTR */
                 std::stringstream ss;
                 ss << "./" << i << ".png";
                 cv::imwrite(ss.str(), frame);

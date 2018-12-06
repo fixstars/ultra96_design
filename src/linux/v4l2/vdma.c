@@ -2,7 +2,9 @@
 #include <linux/dma-mapping.h>
 #include <linux/interrupt.h>
 #include <linux/of_irq.h>
+#include <linux/workqueue.h>
 #include <asm/io.h>
+#include <asm/uaccess.h>
 #include "xparameters.h"
 #include "xaxivdma.h"
 #include "zynq_v4l2.h"
@@ -16,12 +18,56 @@ extern int vdma_h_res, vdma_v_res;
 /* too large to be placed on stack */
 static XAxiVdma inst[MINOR_NUM];
 
+int zynq_v4l2_get_latest_frame_number(struct zynq_v4l2_data *dp)
+{
+	int wb;
+
+	wb = XAxiVdma_CurrFrameStore(dp->inst_vdma, XAXIVDMA_WRITE);
+	/* we will use previous buffer than one that HW is working on */
+	wb = (wb + dp->inst_vdma->MaxNumFrames - 1) % dp->inst_vdma->MaxNumFrames;
+
+	return wb;
+}
+
+static void zynq_v4l2_wq_function(struct work_struct *work)
+{
+	struct zynq_v4l2_work_struct *ws = (struct zynq_v4l2_work_struct *)work;
+	struct zynq_v4l2_data *dp = ws->dp;
+	int slot, wb;
+
+	wb = zynq_v4l2_get_latest_frame_number(dp);
+
+	spin_lock_irq(&dp->lock);
+
+	/* we will copy to oldest queued buffer */
+	slot = zynq_v4l2_find_oldest_slot(dp->queue_bits, dp->latest_frame);
+
+	/* invalidate dcache */
+	dma_sync_single_for_cpu(dp->dma_dev, dp->phys_wb_vdma + dp->frame_size * wb, dp->frame_size, DMA_FROM_DEVICE);
+
+	if (dp->user_mmap) {
+		memcpy((void *)((unsigned long)dp->user_mmap + dp->frame_size * slot),
+			   (void *)((unsigned long)dp->virt_wb_vdma + dp->frame_size * wb),
+			   dp->frame_size);
+	}
+
+	dp->latest_frame = slot;
+	dp->active_bits |= (1 << slot);
+	wake_up_interruptible(&dp->waitq);
+	PRINTK(KERN_INFO "wb = %d, slot = %d, active_bits = %d, latest_frame = %d\n", wb, slot, dp->active_bits, dp->latest_frame);
+
+	spin_unlock_irq(&dp->lock);
+
+	kfree(ws);
+}
+
 static irqreturn_t zynq_v4l2_vdma_isr(int irq, void *dev)
 {
 	XAxiVdma_Channel *Channel;
 	u32 PendingIntr;
 	struct zynq_v4l2_data *dp = (struct zynq_v4l2_data *)dev;
-	int slot, wb;
+	struct zynq_v4l2_work_struct *work;
+	int slot;
 
 	PRINTK(KERN_INFO "%s\n", __FUNCTION__);
 
@@ -35,23 +81,12 @@ static irqreturn_t zynq_v4l2_vdma_isr(int irq, void *dev)
 		spin_lock(&dp->lock);
 		slot = zynq_v4l2_find_oldest_slot(dp->queue_bits, dp->latest_frame);
 		if (slot != -1) {
-			wb = XAxiVdma_CurrFrameStore(dp->inst_vdma, XAXIVDMA_WRITE);
-			#if 1
-			wb = (wb + dp->inst_vdma->MaxNumFrames - 1) % dp->inst_vdma->MaxNumFrames;
-			#endif
-
-			/* invalidate dcache */
-			dma_sync_single_for_cpu(dp->dma_dev, dp->phys_wb_vdma + dp->frame_size * wb, dp->frame_size, DMA_FROM_DEVICE);
-
-			/* copy from latest write buffer to oldest queued buffer */
-			memcpy((void *)((unsigned long)dp->user_mem + dp->frame_size * slot),
-				   (void *)(dp->virt_wb_vdma + dp->frame_size * wb),
-				   dp->frame_size);
-
-			dp->latest_frame = slot;
-			dp->active_bits |= (1 << slot);
-			wake_up_interruptible(&dp->waitq);
-			PRINTK(KERN_INFO "wb = %d, slot = %d, active_bits = %d, latest_frame = %d\n", wb, slot, dp->active_bits, dp->latest_frame);
+			work = (struct zynq_v4l2_work_struct *)kmalloc(sizeof(struct zynq_v4l2_work_struct), GFP_ATOMIC);
+			if (work) {
+				INIT_WORK((struct work_struct *)work, zynq_v4l2_wq_function);
+				work->dp = dp;
+				queue_work(dp->sp->wq, (struct work_struct *)work);
+			}
 		}
 		spin_unlock(&dp->lock);
 	}
