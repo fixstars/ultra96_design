@@ -7,7 +7,7 @@
 
 `timescale 1 ns / 1 ps 
 
-(* CORE_GENERATION_INFO="demosaic_root,hls_ip_2018_2_2,{HLS_INPUT_TYPE=cxx,HLS_INPUT_FLOAT=0,HLS_INPUT_FIXED=0,HLS_INPUT_PART=xczu3eg-sbva484-1-e,HLS_INPUT_CLOCK=6.660000,HLS_INPUT_ARCH=dataflow,HLS_SYN_CLOCK=5.822000,HLS_SYN_LAT=384011,HLS_SYN_TPT=307372,HLS_SYN_MEM=7,HLS_SYN_DSP=0,HLS_SYN_FF=3565,HLS_SYN_LUT=8014,HLS_VERSION=2018_2_2}" *)
+(* CORE_GENERATION_INFO="demosaic_root,hls_ip_2018_2_2,{HLS_INPUT_TYPE=cxx,HLS_INPUT_FLOAT=0,HLS_INPUT_FIXED=0,HLS_INPUT_PART=xczu3eg-sbva484-1-e,HLS_INPUT_CLOCK=6.660000,HLS_INPUT_ARCH=dataflow,HLS_SYN_CLOCK=5.822000,HLS_SYN_LAT=1919883,HLS_SYN_TPT=921787,HLS_SYN_MEM=7,HLS_SYN_DSP=13,HLS_SYN_FF=5483,HLS_SYN_LUT=9850,HLS_VERSION=2018_2_2}" *)
 
 module demosaic_root (
         s_axi_BUS_AXI4LS_AWVALID,
@@ -73,7 +73,7 @@ output   interrupt;
 input  [39:0] p_idata_TDATA;
 input  [0:0] p_idata_TUSER;
 input  [0:0] p_idata_TLAST;
-output  [23:0] p_odata_TDATA;
+output  [31:0] p_odata_TDATA;
 output  [0:0] p_odata_TUSER;
 output  [0:0] p_odata_TLAST;
 input   p_idata_TVALID;
@@ -86,36 +86,46 @@ wire    ap_start;
 wire    ap_ready;
 wire    ap_done;
 wire    ap_idle;
-wire    Loop_1_proc66_U0_ap_start;
-wire    Loop_1_proc66_U0_start_full_n;
-wire    Loop_1_proc66_U0_ap_done;
-wire    Loop_1_proc66_U0_ap_continue;
-wire    Loop_1_proc66_U0_ap_idle;
-wire    Loop_1_proc66_U0_ap_ready;
-wire    Loop_1_proc66_U0_start_out;
-wire    Loop_1_proc66_U0_start_write;
-wire    Loop_1_proc66_U0_p_idata_TREADY;
-wire   [39:0] Loop_1_proc66_U0_p_idata_V_bv_V_din;
-wire    Loop_1_proc66_U0_p_idata_V_bv_V_write;
-wire   [0:0] Loop_1_proc66_U0_p_iuser_V_bv_V_din;
-wire    Loop_1_proc66_U0_p_iuser_V_bv_V_write;
-wire   [0:0] Loop_1_proc66_U0_p_ilast_V_bv_V_din;
-wire    Loop_1_proc66_U0_p_ilast_V_bv_V_write;
+wire    Loop_1_proc85_U0_ap_start;
+wire    Loop_1_proc85_U0_start_full_n;
+wire    Loop_1_proc85_U0_ap_done;
+wire    Loop_1_proc85_U0_ap_continue;
+wire    Loop_1_proc85_U0_ap_idle;
+wire    Loop_1_proc85_U0_ap_ready;
+wire    Loop_1_proc85_U0_start_out;
+wire    Loop_1_proc85_U0_start_write;
+wire    Loop_1_proc85_U0_p_idata_TREADY;
+wire   [39:0] Loop_1_proc85_U0_p_idata_V_bv_V_din;
+wire    Loop_1_proc85_U0_p_idata_V_bv_V_write;
+wire   [0:0] Loop_1_proc85_U0_p_iuser_V_bv_V_din;
+wire    Loop_1_proc85_U0_p_iuser_V_bv_V_write;
+wire   [0:0] Loop_1_proc85_U0_p_ilast_V_bv_V_din;
+wire    Loop_1_proc85_U0_p_ilast_V_bv_V_write;
+wire    demosaic_U0_ap_start;
+wire    demosaic_U0_ap_done;
+wire    demosaic_U0_ap_continue;
+wire    demosaic_U0_ap_idle;
+wire    demosaic_U0_ap_ready;
+wire    demosaic_U0_start_out;
+wire    demosaic_U0_start_write;
+wire    demosaic_U0_p_idata_V_bv_V_read;
+wire   [7:0] demosaic_U0_p_demosaic_V_bv_V_din;
+wire    demosaic_U0_p_demosaic_V_bv_V_write;
 wire    odata_U0_ap_start;
 wire    odata_U0_ap_done;
 wire    odata_U0_ap_continue;
 wire    odata_U0_ap_idle;
 wire    odata_U0_ap_ready;
-wire    odata_U0_start_out;
-wire    odata_U0_start_write;
-wire    odata_U0_p_idata_V_bv_V_read;
-wire   [23:0] odata_U0_p_odata_V_bv_V_din;
+wire    odata_U0_p_demosaic_V_bv_V_read;
+wire   [31:0] odata_U0_p_odata_V_bv_V_din;
 wire    odata_U0_p_odata_V_bv_V_write;
 wire    olast_U0_ap_start;
 wire    olast_U0_ap_done;
 wire    olast_U0_ap_continue;
 wire    olast_U0_ap_idle;
 wire    olast_U0_ap_ready;
+wire    olast_U0_start_out;
+wire    olast_U0_start_write;
 wire    olast_U0_p_ilast_V_bv_V_read;
 wire   [0:0] olast_U0_p_olast_V_bv_V_din;
 wire    olast_U0_p_olast_V_bv_V_write;
@@ -127,18 +137,18 @@ wire    ouser_U0_ap_ready;
 wire    ouser_U0_p_iuser_V_bv_V_read;
 wire   [0:0] ouser_U0_p_ouser_V_bv_V_din;
 wire    ouser_U0_p_ouser_V_bv_V_write;
-wire    Loop_2_proc67_U0_ap_start;
-wire    Loop_2_proc67_U0_ap_done;
-wire    Loop_2_proc67_U0_ap_continue;
-wire    Loop_2_proc67_U0_ap_idle;
-wire    Loop_2_proc67_U0_ap_ready;
-wire    Loop_2_proc67_U0_p_odata_V_bv_V_read;
-wire    Loop_2_proc67_U0_p_ouser_V_bv_V_read;
-wire    Loop_2_proc67_U0_p_olast_V_bv_V_read;
-wire   [23:0] Loop_2_proc67_U0_p_odata_TDATA;
-wire    Loop_2_proc67_U0_p_odata_TVALID;
-wire   [0:0] Loop_2_proc67_U0_p_odata_TUSER;
-wire   [0:0] Loop_2_proc67_U0_p_odata_TLAST;
+wire    Loop_2_proc86_U0_ap_start;
+wire    Loop_2_proc86_U0_ap_done;
+wire    Loop_2_proc86_U0_ap_continue;
+wire    Loop_2_proc86_U0_ap_idle;
+wire    Loop_2_proc86_U0_ap_ready;
+wire    Loop_2_proc86_U0_p_odata_V_bv_V_read;
+wire    Loop_2_proc86_U0_p_ouser_V_bv_V_read;
+wire    Loop_2_proc86_U0_p_olast_V_bv_V_read;
+wire   [31:0] Loop_2_proc86_U0_p_odata_TDATA;
+wire    Loop_2_proc86_U0_p_odata_TVALID;
+wire   [0:0] Loop_2_proc86_U0_p_odata_TUSER;
+wire   [0:0] Loop_2_proc86_U0_p_odata_TLAST;
 wire    ap_sync_continue;
 wire    p_idata_V_bv_V_full_n;
 wire   [39:0] p_idata_V_bv_V_dout;
@@ -149,8 +159,11 @@ wire    p_iuser_V_bv_V_empty_n;
 wire    p_ilast_V_bv_V_full_n;
 wire   [0:0] p_ilast_V_bv_V_dout;
 wire    p_ilast_V_bv_V_empty_n;
+wire    p_demosaic_V_bv_V_full_n;
+wire   [7:0] p_demosaic_V_bv_V_dout;
+wire    p_demosaic_V_bv_V_empty_n;
 wire    p_odata_V_bv_V_full_n;
-wire   [23:0] p_odata_V_bv_V_dout;
+wire   [31:0] p_odata_V_bv_V_dout;
 wire    p_odata_V_bv_V_empty_n;
 wire    p_olast_V_bv_V_full_n;
 wire   [0:0] p_olast_V_bv_V_dout;
@@ -160,10 +173,10 @@ wire   [0:0] p_ouser_V_bv_V_dout;
 wire    p_ouser_V_bv_V_empty_n;
 wire    ap_sync_done;
 wire    ap_sync_ready;
-wire   [0:0] start_for_odata_U0_din;
-wire    start_for_odata_U0_full_n;
-wire   [0:0] start_for_odata_U0_dout;
-wire    start_for_odata_U0_empty_n;
+wire   [0:0] start_for_demosaic_U0_din;
+wire    start_for_demosaic_U0_full_n;
+wire   [0:0] start_for_demosaic_U0_dout;
+wire    start_for_demosaic_U0_empty_n;
 wire   [0:0] start_for_olast_U0_din;
 wire    start_for_olast_U0_full_n;
 wire   [0:0] start_for_olast_U0_dout;
@@ -172,16 +185,20 @@ wire   [0:0] start_for_ouser_U0_din;
 wire    start_for_ouser_U0_full_n;
 wire   [0:0] start_for_ouser_U0_dout;
 wire    start_for_ouser_U0_empty_n;
-wire   [0:0] start_for_Loop_2_proc67_U0_din;
-wire    start_for_Loop_2_proc67_U0_full_n;
-wire   [0:0] start_for_Loop_2_proc67_U0_dout;
-wire    start_for_Loop_2_proc67_U0_empty_n;
-wire    olast_U0_start_full_n;
-wire    olast_U0_start_write;
+wire   [0:0] start_for_odata_U0_din;
+wire    start_for_odata_U0_full_n;
+wire   [0:0] start_for_odata_U0_dout;
+wire    start_for_odata_U0_empty_n;
+wire    odata_U0_start_full_n;
+wire    odata_U0_start_write;
+wire   [0:0] start_for_Loop_2_proc86_U0_din;
+wire    start_for_Loop_2_proc86_U0_full_n;
+wire   [0:0] start_for_Loop_2_proc86_U0_dout;
+wire    start_for_Loop_2_proc86_U0_empty_n;
 wire    ouser_U0_start_full_n;
 wire    ouser_U0_start_write;
-wire    Loop_2_proc67_U0_start_full_n;
-wire    Loop_2_proc67_U0_start_write;
+wire    Loop_2_proc86_U0_start_full_n;
+wire    Loop_2_proc86_U0_start_write;
 wire   [31:0] ap_return;
 
 demosaic_root_BUS_AXI4LS_s_axi #(
@@ -216,47 +233,63 @@ demosaic_root_BUS_AXI4LS_s_axi_U(
     .ap_return(32'd0)
 );
 
-Loop_1_proc66 Loop_1_proc66_U0(
+Loop_1_proc85 Loop_1_proc85_U0(
     .ap_clk(ap_clk),
     .ap_rst(ap_rst_n_inv),
-    .ap_start(Loop_1_proc66_U0_ap_start),
-    .start_full_n(Loop_1_proc66_U0_start_full_n),
-    .ap_done(Loop_1_proc66_U0_ap_done),
-    .ap_continue(Loop_1_proc66_U0_ap_continue),
-    .ap_idle(Loop_1_proc66_U0_ap_idle),
-    .ap_ready(Loop_1_proc66_U0_ap_ready),
-    .start_out(Loop_1_proc66_U0_start_out),
-    .start_write(Loop_1_proc66_U0_start_write),
+    .ap_start(Loop_1_proc85_U0_ap_start),
+    .start_full_n(Loop_1_proc85_U0_start_full_n),
+    .ap_done(Loop_1_proc85_U0_ap_done),
+    .ap_continue(Loop_1_proc85_U0_ap_continue),
+    .ap_idle(Loop_1_proc85_U0_ap_idle),
+    .ap_ready(Loop_1_proc85_U0_ap_ready),
+    .start_out(Loop_1_proc85_U0_start_out),
+    .start_write(Loop_1_proc85_U0_start_write),
     .p_idata_TDATA(p_idata_TDATA),
     .p_idata_TVALID(p_idata_TVALID),
-    .p_idata_TREADY(Loop_1_proc66_U0_p_idata_TREADY),
+    .p_idata_TREADY(Loop_1_proc85_U0_p_idata_TREADY),
     .p_idata_TUSER(p_idata_TUSER),
     .p_idata_TLAST(p_idata_TLAST),
-    .p_idata_V_bv_V_din(Loop_1_proc66_U0_p_idata_V_bv_V_din),
+    .p_idata_V_bv_V_din(Loop_1_proc85_U0_p_idata_V_bv_V_din),
     .p_idata_V_bv_V_full_n(p_idata_V_bv_V_full_n),
-    .p_idata_V_bv_V_write(Loop_1_proc66_U0_p_idata_V_bv_V_write),
-    .p_iuser_V_bv_V_din(Loop_1_proc66_U0_p_iuser_V_bv_V_din),
+    .p_idata_V_bv_V_write(Loop_1_proc85_U0_p_idata_V_bv_V_write),
+    .p_iuser_V_bv_V_din(Loop_1_proc85_U0_p_iuser_V_bv_V_din),
     .p_iuser_V_bv_V_full_n(p_iuser_V_bv_V_full_n),
-    .p_iuser_V_bv_V_write(Loop_1_proc66_U0_p_iuser_V_bv_V_write),
-    .p_ilast_V_bv_V_din(Loop_1_proc66_U0_p_ilast_V_bv_V_din),
+    .p_iuser_V_bv_V_write(Loop_1_proc85_U0_p_iuser_V_bv_V_write),
+    .p_ilast_V_bv_V_din(Loop_1_proc85_U0_p_ilast_V_bv_V_din),
     .p_ilast_V_bv_V_full_n(p_ilast_V_bv_V_full_n),
-    .p_ilast_V_bv_V_write(Loop_1_proc66_U0_p_ilast_V_bv_V_write)
+    .p_ilast_V_bv_V_write(Loop_1_proc85_U0_p_ilast_V_bv_V_write)
+);
+
+demosaic demosaic_U0(
+    .ap_clk(ap_clk),
+    .ap_rst(ap_rst_n_inv),
+    .ap_start(demosaic_U0_ap_start),
+    .start_full_n(start_for_odata_U0_full_n),
+    .ap_done(demosaic_U0_ap_done),
+    .ap_continue(demosaic_U0_ap_continue),
+    .ap_idle(demosaic_U0_ap_idle),
+    .ap_ready(demosaic_U0_ap_ready),
+    .start_out(demosaic_U0_start_out),
+    .start_write(demosaic_U0_start_write),
+    .p_idata_V_bv_V_dout(p_idata_V_bv_V_dout),
+    .p_idata_V_bv_V_empty_n(p_idata_V_bv_V_empty_n),
+    .p_idata_V_bv_V_read(demosaic_U0_p_idata_V_bv_V_read),
+    .p_demosaic_V_bv_V_din(demosaic_U0_p_demosaic_V_bv_V_din),
+    .p_demosaic_V_bv_V_full_n(p_demosaic_V_bv_V_full_n),
+    .p_demosaic_V_bv_V_write(demosaic_U0_p_demosaic_V_bv_V_write)
 );
 
 odata odata_U0(
     .ap_clk(ap_clk),
     .ap_rst(ap_rst_n_inv),
     .ap_start(odata_U0_ap_start),
-    .start_full_n(start_for_Loop_2_proc67_U0_full_n),
     .ap_done(odata_U0_ap_done),
     .ap_continue(odata_U0_ap_continue),
     .ap_idle(odata_U0_ap_idle),
     .ap_ready(odata_U0_ap_ready),
-    .start_out(odata_U0_start_out),
-    .start_write(odata_U0_start_write),
-    .p_idata_V_bv_V_dout(p_idata_V_bv_V_dout),
-    .p_idata_V_bv_V_empty_n(p_idata_V_bv_V_empty_n),
-    .p_idata_V_bv_V_read(odata_U0_p_idata_V_bv_V_read),
+    .p_demosaic_V_bv_V_dout(p_demosaic_V_bv_V_dout),
+    .p_demosaic_V_bv_V_empty_n(p_demosaic_V_bv_V_empty_n),
+    .p_demosaic_V_bv_V_read(odata_U0_p_demosaic_V_bv_V_read),
     .p_odata_V_bv_V_din(odata_U0_p_odata_V_bv_V_din),
     .p_odata_V_bv_V_full_n(p_odata_V_bv_V_full_n),
     .p_odata_V_bv_V_write(odata_U0_p_odata_V_bv_V_write)
@@ -266,10 +299,13 @@ olast olast_U0(
     .ap_clk(ap_clk),
     .ap_rst(ap_rst_n_inv),
     .ap_start(olast_U0_ap_start),
+    .start_full_n(start_for_Loop_2_proc86_U0_full_n),
     .ap_done(olast_U0_ap_done),
     .ap_continue(olast_U0_ap_continue),
     .ap_idle(olast_U0_ap_idle),
     .ap_ready(olast_U0_ap_ready),
+    .start_out(olast_U0_start_out),
+    .start_write(olast_U0_start_write),
     .p_ilast_V_bv_V_dout(p_ilast_V_bv_V_dout),
     .p_ilast_V_bv_V_empty_n(p_ilast_V_bv_V_empty_n),
     .p_ilast_V_bv_V_read(olast_U0_p_ilast_V_bv_V_read),
@@ -294,28 +330,28 @@ ouser ouser_U0(
     .p_ouser_V_bv_V_write(ouser_U0_p_ouser_V_bv_V_write)
 );
 
-Loop_2_proc67 Loop_2_proc67_U0(
+Loop_2_proc86 Loop_2_proc86_U0(
     .ap_clk(ap_clk),
     .ap_rst(ap_rst_n_inv),
-    .ap_start(Loop_2_proc67_U0_ap_start),
-    .ap_done(Loop_2_proc67_U0_ap_done),
-    .ap_continue(Loop_2_proc67_U0_ap_continue),
-    .ap_idle(Loop_2_proc67_U0_ap_idle),
-    .ap_ready(Loop_2_proc67_U0_ap_ready),
+    .ap_start(Loop_2_proc86_U0_ap_start),
+    .ap_done(Loop_2_proc86_U0_ap_done),
+    .ap_continue(Loop_2_proc86_U0_ap_continue),
+    .ap_idle(Loop_2_proc86_U0_ap_idle),
+    .ap_ready(Loop_2_proc86_U0_ap_ready),
     .p_odata_V_bv_V_dout(p_odata_V_bv_V_dout),
     .p_odata_V_bv_V_empty_n(p_odata_V_bv_V_empty_n),
-    .p_odata_V_bv_V_read(Loop_2_proc67_U0_p_odata_V_bv_V_read),
+    .p_odata_V_bv_V_read(Loop_2_proc86_U0_p_odata_V_bv_V_read),
     .p_ouser_V_bv_V_dout(p_ouser_V_bv_V_dout),
     .p_ouser_V_bv_V_empty_n(p_ouser_V_bv_V_empty_n),
-    .p_ouser_V_bv_V_read(Loop_2_proc67_U0_p_ouser_V_bv_V_read),
+    .p_ouser_V_bv_V_read(Loop_2_proc86_U0_p_ouser_V_bv_V_read),
     .p_olast_V_bv_V_dout(p_olast_V_bv_V_dout),
     .p_olast_V_bv_V_empty_n(p_olast_V_bv_V_empty_n),
-    .p_olast_V_bv_V_read(Loop_2_proc67_U0_p_olast_V_bv_V_read),
-    .p_odata_TDATA(Loop_2_proc67_U0_p_odata_TDATA),
-    .p_odata_TVALID(Loop_2_proc67_U0_p_odata_TVALID),
+    .p_olast_V_bv_V_read(Loop_2_proc86_U0_p_olast_V_bv_V_read),
+    .p_odata_TDATA(Loop_2_proc86_U0_p_odata_TDATA),
+    .p_odata_TVALID(Loop_2_proc86_U0_p_odata_TVALID),
     .p_odata_TREADY(p_odata_TREADY),
-    .p_odata_TUSER(Loop_2_proc67_U0_p_odata_TUSER),
-    .p_odata_TLAST(Loop_2_proc67_U0_p_odata_TLAST)
+    .p_odata_TUSER(Loop_2_proc86_U0_p_odata_TUSER),
+    .p_odata_TLAST(Loop_2_proc86_U0_p_odata_TLAST)
 );
 
 fifo_w40_d16_A p_idata_V_bv_V_U(
@@ -323,12 +359,12 @@ fifo_w40_d16_A p_idata_V_bv_V_U(
     .reset(ap_rst_n_inv),
     .if_read_ce(1'b1),
     .if_write_ce(1'b1),
-    .if_din(Loop_1_proc66_U0_p_idata_V_bv_V_din),
+    .if_din(Loop_1_proc85_U0_p_idata_V_bv_V_din),
     .if_full_n(p_idata_V_bv_V_full_n),
-    .if_write(Loop_1_proc66_U0_p_idata_V_bv_V_write),
+    .if_write(Loop_1_proc85_U0_p_idata_V_bv_V_write),
     .if_dout(p_idata_V_bv_V_dout),
     .if_empty_n(p_idata_V_bv_V_empty_n),
-    .if_read(odata_U0_p_idata_V_bv_V_read)
+    .if_read(demosaic_U0_p_idata_V_bv_V_read)
 );
 
 fifo_w1_d320_A p_iuser_V_bv_V_U(
@@ -336,9 +372,9 @@ fifo_w1_d320_A p_iuser_V_bv_V_U(
     .reset(ap_rst_n_inv),
     .if_read_ce(1'b1),
     .if_write_ce(1'b1),
-    .if_din(Loop_1_proc66_U0_p_iuser_V_bv_V_din),
+    .if_din(Loop_1_proc85_U0_p_iuser_V_bv_V_din),
     .if_full_n(p_iuser_V_bv_V_full_n),
-    .if_write(Loop_1_proc66_U0_p_iuser_V_bv_V_write),
+    .if_write(Loop_1_proc85_U0_p_iuser_V_bv_V_write),
     .if_dout(p_iuser_V_bv_V_dout),
     .if_empty_n(p_iuser_V_bv_V_empty_n),
     .if_read(ouser_U0_p_iuser_V_bv_V_read)
@@ -349,15 +385,28 @@ fifo_w1_d320_A p_ilast_V_bv_V_U(
     .reset(ap_rst_n_inv),
     .if_read_ce(1'b1),
     .if_write_ce(1'b1),
-    .if_din(Loop_1_proc66_U0_p_ilast_V_bv_V_din),
+    .if_din(Loop_1_proc85_U0_p_ilast_V_bv_V_din),
     .if_full_n(p_ilast_V_bv_V_full_n),
-    .if_write(Loop_1_proc66_U0_p_ilast_V_bv_V_write),
+    .if_write(Loop_1_proc85_U0_p_ilast_V_bv_V_write),
     .if_dout(p_ilast_V_bv_V_dout),
     .if_empty_n(p_ilast_V_bv_V_empty_n),
     .if_read(olast_U0_p_ilast_V_bv_V_read)
 );
 
-fifo_w24_d16_A p_odata_V_bv_V_U(
+fifo_w8_d16_A p_demosaic_V_bv_V_U(
+    .clk(ap_clk),
+    .reset(ap_rst_n_inv),
+    .if_read_ce(1'b1),
+    .if_write_ce(1'b1),
+    .if_din(demosaic_U0_p_demosaic_V_bv_V_din),
+    .if_full_n(p_demosaic_V_bv_V_full_n),
+    .if_write(demosaic_U0_p_demosaic_V_bv_V_write),
+    .if_dout(p_demosaic_V_bv_V_dout),
+    .if_empty_n(p_demosaic_V_bv_V_empty_n),
+    .if_read(odata_U0_p_demosaic_V_bv_V_read)
+);
+
+fifo_w32_d16_A p_odata_V_bv_V_U(
     .clk(ap_clk),
     .reset(ap_rst_n_inv),
     .if_read_ce(1'b1),
@@ -367,7 +416,7 @@ fifo_w24_d16_A p_odata_V_bv_V_U(
     .if_write(odata_U0_p_odata_V_bv_V_write),
     .if_dout(p_odata_V_bv_V_dout),
     .if_empty_n(p_odata_V_bv_V_empty_n),
-    .if_read(Loop_2_proc67_U0_p_odata_V_bv_V_read)
+    .if_read(Loop_2_proc86_U0_p_odata_V_bv_V_read)
 );
 
 fifo_w1_d16_A p_olast_V_bv_V_U(
@@ -380,7 +429,7 @@ fifo_w1_d16_A p_olast_V_bv_V_U(
     .if_write(olast_U0_p_olast_V_bv_V_write),
     .if_dout(p_olast_V_bv_V_dout),
     .if_empty_n(p_olast_V_bv_V_empty_n),
-    .if_read(Loop_2_proc67_U0_p_olast_V_bv_V_read)
+    .if_read(Loop_2_proc86_U0_p_olast_V_bv_V_read)
 );
 
 fifo_w1_d16_A p_ouser_V_bv_V_U(
@@ -393,20 +442,20 @@ fifo_w1_d16_A p_ouser_V_bv_V_U(
     .if_write(ouser_U0_p_ouser_V_bv_V_write),
     .if_dout(p_ouser_V_bv_V_dout),
     .if_empty_n(p_ouser_V_bv_V_empty_n),
-    .if_read(Loop_2_proc67_U0_p_ouser_V_bv_V_read)
+    .if_read(Loop_2_proc86_U0_p_ouser_V_bv_V_read)
 );
 
-start_for_odata_U0 start_for_odata_U0_U(
+start_for_demosaiocq start_for_demosaiocq_U(
     .clk(ap_clk),
     .reset(ap_rst_n_inv),
     .if_read_ce(1'b1),
     .if_write_ce(1'b1),
-    .if_din(start_for_odata_U0_din),
-    .if_full_n(start_for_odata_U0_full_n),
-    .if_write(Loop_1_proc66_U0_start_write),
-    .if_dout(start_for_odata_U0_dout),
-    .if_empty_n(start_for_odata_U0_empty_n),
-    .if_read(odata_U0_ap_ready)
+    .if_din(start_for_demosaic_U0_din),
+    .if_full_n(start_for_demosaic_U0_full_n),
+    .if_write(Loop_1_proc85_U0_start_write),
+    .if_dout(start_for_demosaic_U0_dout),
+    .if_empty_n(start_for_demosaic_U0_empty_n),
+    .if_read(demosaic_U0_ap_ready)
 );
 
 start_for_olast_U0 start_for_olast_U0_U(
@@ -416,7 +465,7 @@ start_for_olast_U0 start_for_olast_U0_U(
     .if_write_ce(1'b1),
     .if_din(start_for_olast_U0_din),
     .if_full_n(start_for_olast_U0_full_n),
-    .if_write(Loop_1_proc66_U0_start_write),
+    .if_write(Loop_1_proc85_U0_start_write),
     .if_dout(start_for_olast_U0_dout),
     .if_empty_n(start_for_olast_U0_empty_n),
     .if_read(olast_U0_ap_ready)
@@ -429,44 +478,57 @@ start_for_ouser_U0 start_for_ouser_U0_U(
     .if_write_ce(1'b1),
     .if_din(start_for_ouser_U0_din),
     .if_full_n(start_for_ouser_U0_full_n),
-    .if_write(Loop_1_proc66_U0_start_write),
+    .if_write(Loop_1_proc85_U0_start_write),
     .if_dout(start_for_ouser_U0_dout),
     .if_empty_n(start_for_ouser_U0_empty_n),
     .if_read(ouser_U0_ap_ready)
 );
 
-start_for_Loop_2_dEe start_for_Loop_2_dEe_U(
+start_for_odata_U0 start_for_odata_U0_U(
     .clk(ap_clk),
     .reset(ap_rst_n_inv),
     .if_read_ce(1'b1),
     .if_write_ce(1'b1),
-    .if_din(start_for_Loop_2_proc67_U0_din),
-    .if_full_n(start_for_Loop_2_proc67_U0_full_n),
-    .if_write(odata_U0_start_write),
-    .if_dout(start_for_Loop_2_proc67_U0_dout),
-    .if_empty_n(start_for_Loop_2_proc67_U0_empty_n),
-    .if_read(Loop_2_proc67_U0_ap_ready)
+    .if_din(start_for_odata_U0_din),
+    .if_full_n(start_for_odata_U0_full_n),
+    .if_write(demosaic_U0_start_write),
+    .if_dout(start_for_odata_U0_dout),
+    .if_empty_n(start_for_odata_U0_empty_n),
+    .if_read(odata_U0_ap_ready)
 );
 
-assign Loop_1_proc66_U0_ap_continue = 1'b1;
+start_for_Loop_2_pcA start_for_Loop_2_pcA_U(
+    .clk(ap_clk),
+    .reset(ap_rst_n_inv),
+    .if_read_ce(1'b1),
+    .if_write_ce(1'b1),
+    .if_din(start_for_Loop_2_proc86_U0_din),
+    .if_full_n(start_for_Loop_2_proc86_U0_full_n),
+    .if_write(olast_U0_start_write),
+    .if_dout(start_for_Loop_2_proc86_U0_dout),
+    .if_empty_n(start_for_Loop_2_proc86_U0_empty_n),
+    .if_read(Loop_2_proc86_U0_ap_ready)
+);
 
-assign Loop_1_proc66_U0_ap_start = ap_start;
+assign Loop_1_proc85_U0_ap_continue = 1'b1;
 
-assign Loop_1_proc66_U0_start_full_n = (start_for_ouser_U0_full_n & start_for_olast_U0_full_n & start_for_odata_U0_full_n);
+assign Loop_1_proc85_U0_ap_start = ap_start;
 
-assign Loop_2_proc67_U0_ap_continue = 1'b1;
+assign Loop_1_proc85_U0_start_full_n = (start_for_ouser_U0_full_n & start_for_olast_U0_full_n & start_for_demosaic_U0_full_n);
 
-assign Loop_2_proc67_U0_ap_start = start_for_Loop_2_proc67_U0_empty_n;
+assign Loop_2_proc86_U0_ap_continue = 1'b1;
 
-assign Loop_2_proc67_U0_start_full_n = 1'b1;
+assign Loop_2_proc86_U0_ap_start = start_for_Loop_2_proc86_U0_empty_n;
 
-assign Loop_2_proc67_U0_start_write = 1'b0;
+assign Loop_2_proc86_U0_start_full_n = 1'b1;
 
-assign ap_done = Loop_2_proc67_U0_ap_done;
+assign Loop_2_proc86_U0_start_write = 1'b0;
 
-assign ap_idle = (ouser_U0_ap_idle & olast_U0_ap_idle & odata_U0_ap_idle & Loop_2_proc67_U0_ap_idle & Loop_1_proc66_U0_ap_idle);
+assign ap_done = Loop_2_proc86_U0_ap_done;
 
-assign ap_ready = Loop_1_proc66_U0_ap_ready;
+assign ap_idle = (ouser_U0_ap_idle & olast_U0_ap_idle & odata_U0_ap_idle & demosaic_U0_ap_idle & Loop_2_proc86_U0_ap_idle & Loop_1_proc85_U0_ap_idle);
+
+assign ap_ready = Loop_1_proc85_U0_ap_ready;
 
 always @ (*) begin
     ap_rst_n_inv = ~ap_rst_n;
@@ -474,21 +536,25 @@ end
 
 assign ap_sync_continue = 1'b1;
 
-assign ap_sync_done = Loop_2_proc67_U0_ap_done;
+assign ap_sync_done = Loop_2_proc86_U0_ap_done;
 
-assign ap_sync_ready = Loop_1_proc66_U0_ap_ready;
+assign ap_sync_ready = Loop_1_proc85_U0_ap_ready;
+
+assign demosaic_U0_ap_continue = 1'b1;
+
+assign demosaic_U0_ap_start = start_for_demosaic_U0_empty_n;
 
 assign odata_U0_ap_continue = 1'b1;
 
 assign odata_U0_ap_start = start_for_odata_U0_empty_n;
 
+assign odata_U0_start_full_n = 1'b1;
+
+assign odata_U0_start_write = 1'b0;
+
 assign olast_U0_ap_continue = 1'b1;
 
 assign olast_U0_ap_start = start_for_olast_U0_empty_n;
-
-assign olast_U0_start_full_n = 1'b1;
-
-assign olast_U0_start_write = 1'b0;
 
 assign ouser_U0_ap_continue = 1'b1;
 
@@ -498,17 +564,19 @@ assign ouser_U0_start_full_n = 1'b1;
 
 assign ouser_U0_start_write = 1'b0;
 
-assign p_idata_TREADY = Loop_1_proc66_U0_p_idata_TREADY;
+assign p_idata_TREADY = Loop_1_proc85_U0_p_idata_TREADY;
 
-assign p_odata_TDATA = Loop_2_proc67_U0_p_odata_TDATA;
+assign p_odata_TDATA = Loop_2_proc86_U0_p_odata_TDATA;
 
-assign p_odata_TLAST = Loop_2_proc67_U0_p_odata_TLAST;
+assign p_odata_TLAST = Loop_2_proc86_U0_p_odata_TLAST;
 
-assign p_odata_TUSER = Loop_2_proc67_U0_p_odata_TUSER;
+assign p_odata_TUSER = Loop_2_proc86_U0_p_odata_TUSER;
 
-assign p_odata_TVALID = Loop_2_proc67_U0_p_odata_TVALID;
+assign p_odata_TVALID = Loop_2_proc86_U0_p_odata_TVALID;
 
-assign start_for_Loop_2_proc67_U0_din = 1'b1;
+assign start_for_Loop_2_proc86_U0_din = 1'b1;
+
+assign start_for_demosaic_U0_din = 1'b1;
 
 assign start_for_odata_U0_din = 1'b1;
 

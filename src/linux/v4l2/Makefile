@@ -18,7 +18,7 @@ ifeq ($(ARCH), arm64)
  endif
 endif
 
-CFILES = main.c vdma.c demosaic.c mipicsi.c dummy/dummy.c $(XLNX_VDMA_DIR)/xaxivdma.c $(XLNX_VDMA_DIR)/xaxivdma_channel.c $(XLNX_VDMA_DIR)/xaxivdma_sinit.c $(XLNX_VDMA_DIR)/xaxivdma_g.c $(XLNX_VDMA_DIR)/xaxivdma_intr.c $(XLNX_DEMOSAIC_DIR)/xdemosaic_root.c $(XLNX_DEMOSAIC_DIR)/xdemosaic_root_sinit.c $(XLNX_DEMOSAIC_DIR)/xdemosaic_root_g.c $(XLNX_MIPI_DIR)/xcsi.c $(XLNX_MIPI_DIR)/xcsi_sinit.c $(XLNX_MIPI_DIR)/xcsi_intr.c $(XLNX_MIPI_DIR)/xcsi_g.c
+CFILES = main.c ioctl.c vdma.c demosaic.c mipicsi.c dummy/dummy.c $(XLNX_VDMA_DIR)/xaxivdma.c $(XLNX_VDMA_DIR)/xaxivdma_channel.c $(XLNX_VDMA_DIR)/xaxivdma_sinit.c $(XLNX_VDMA_DIR)/xaxivdma_g.c $(XLNX_VDMA_DIR)/xaxivdma_intr.c $(XLNX_DEMOSAIC_DIR)/xdemosaic_root.c $(XLNX_DEMOSAIC_DIR)/xdemosaic_root_sinit.c $(XLNX_DEMOSAIC_DIR)/xdemosaic_root_g.c $(XLNX_MIPI_DIR)/xcsi.c $(XLNX_MIPI_DIR)/xcsi_sinit.c $(XLNX_MIPI_DIR)/xcsi_intr.c $(XLNX_MIPI_DIR)/xcsi_g.c
 
 obj-m += v4l2.o
 v4l2-objs := $(CFILES:.c=.o)

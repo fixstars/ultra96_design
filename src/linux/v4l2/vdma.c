@@ -1,10 +1,8 @@
-#include <linux/kernel.h>
 #include <linux/dma-mapping.h>
 #include <linux/interrupt.h>
 #include <linux/of_irq.h>
 #include <linux/workqueue.h>
-#include <asm/io.h>
-#include <asm/uaccess.h>
+#include <linux/videodev2.h>
 #include "xparameters.h"
 #include "xaxivdma.h"
 #include "zynq_v4l2.h"
@@ -18,13 +16,13 @@ extern int vdma_h_res, vdma_v_res;
 /* too large to be placed on stack */
 static XAxiVdma inst[MINOR_NUM];
 
-int zynq_v4l2_get_latest_frame_number(struct zynq_v4l2_data *dp)
+int zynq_v4l2_get_latest_frame_number(struct zynq_v4l2_dev_data *dp)
 {
 	int wb;
 
-	wb = XAxiVdma_CurrFrameStore(dp->inst_vdma, XAXIVDMA_WRITE);
+	wb = XAxiVdma_CurrFrameStore(dp->vdma.inst, XAXIVDMA_WRITE);
 	/* we will use previous buffer than one that HW is working on */
-	wb = (wb + dp->inst_vdma->MaxNumFrames - 1) % dp->inst_vdma->MaxNumFrames;
+	wb = (wb + dp->vdma.inst->MaxNumFrames - 1) % dp->vdma.inst->MaxNumFrames;
 
 	return wb;
 }
@@ -32,7 +30,7 @@ int zynq_v4l2_get_latest_frame_number(struct zynq_v4l2_data *dp)
 static void zynq_v4l2_wq_function(struct work_struct *work)
 {
 	struct zynq_v4l2_work_struct *ws = (struct zynq_v4l2_work_struct *)work;
-	struct zynq_v4l2_data *dp = ws->dp;
+	struct zynq_v4l2_dev_data *dp = ws->dp;
 	int slot, wb;
 
 	wb = zynq_v4l2_get_latest_frame_number(dp);
@@ -40,23 +38,24 @@ static void zynq_v4l2_wq_function(struct work_struct *work)
 	spin_lock_irq(&dp->lock);
 
 	/* we will copy to oldest queued buffer */
-	slot = zynq_v4l2_find_oldest_slot(dp->queue_bits, dp->latest_frame);
+	slot = zynq_v4l2_find_oldest_slot(dp->ctrl.queue_bits, dp->ctrl.latest_frame);
 
-	/* invalidate dcache */
-	dma_sync_single_for_cpu(dp->dma_dev, dp->phys_wb_vdma + dp->frame_size * wb, dp->frame_size, DMA_FROM_DEVICE);
-
-	if (dp->user_mmap) {
-		memcpy((void *)((unsigned long)dp->user_mmap + dp->frame_size * slot),
-			   (void *)((unsigned long)dp->virt_wb_vdma + dp->frame_size * wb),
-			   dp->frame_size);
-	}
-
-	dp->latest_frame = slot;
-	dp->active_bits |= (1 << slot);
-	wake_up_interruptible(&dp->waitq);
-	PRINTK(KERN_INFO "wb = %d, slot = %d, active_bits = %d, latest_frame = %d\n", wb, slot, dp->active_bits, dp->latest_frame);
+	dp->ctrl.latest_frame = slot;
+	dp->ctrl.active_bits |= (1 << slot);
 
 	spin_unlock_irq(&dp->lock);
+
+	/* invalidate dcache */
+	dma_sync_single_for_cpu(dp->dma_dev, dp->vdma.phys_wb + dp->frame.size * wb, dp->frame.size, DMA_FROM_DEVICE);
+
+	if (dp->mem.mmap) {
+		memcpy((void *)((unsigned long)dp->mem.mmap + dp->frame.size * slot),
+			   (void *)((unsigned long)dp->vdma.virt_wb + dp->frame.size * wb),
+			   dp->frame.size);
+	}
+
+	wake_up_interruptible(&dp->ctrl.waitq);
+	PRINTK(KERN_INFO "wb = %d, slot = %d, active_bits = %d, latest_frame = %d\n", wb, slot, dp->ctrl.active_bits, dp->ctrl.latest_frame);
 
 	kfree(ws);
 }
@@ -65,13 +64,13 @@ static irqreturn_t zynq_v4l2_vdma_isr(int irq, void *dev)
 {
 	XAxiVdma_Channel *Channel;
 	u32 PendingIntr;
-	struct zynq_v4l2_data *dp = (struct zynq_v4l2_data *)dev;
+	struct zynq_v4l2_dev_data *dp = (struct zynq_v4l2_dev_data *)dev;
 	struct zynq_v4l2_work_struct *work;
 	int slot;
 
 	PRINTK(KERN_INFO "%s\n", __FUNCTION__);
 
-	Channel = XAxiVdma_GetChannel(dp->inst_vdma, XAXIVDMA_WRITE);
+	Channel = XAxiVdma_GetChannel(dp->vdma.inst, XAXIVDMA_WRITE);
 	PendingIntr = XAxiVdma_ChannelGetPendingIntr(Channel);
 	PendingIntr &= XAxiVdma_ChannelGetEnabledIntr(Channel);
 
@@ -79,7 +78,8 @@ static irqreturn_t zynq_v4l2_vdma_isr(int irq, void *dev)
 
 	if (PendingIntr & XAXIVDMA_IXR_COMPLETION_MASK) {
 		spin_lock(&dp->lock);
-		slot = zynq_v4l2_find_oldest_slot(dp->queue_bits, dp->latest_frame);
+		slot = zynq_v4l2_find_oldest_slot(dp->ctrl.queue_bits, dp->ctrl.latest_frame);
+		spin_unlock(&dp->lock);
 		if (slot != -1) {
 			work = (struct zynq_v4l2_work_struct *)kmalloc(sizeof(struct zynq_v4l2_work_struct), GFP_ATOMIC);
 			if (work) {
@@ -88,20 +88,19 @@ static irqreturn_t zynq_v4l2_vdma_isr(int irq, void *dev)
 				queue_work(dp->sp->wq, (struct work_struct *)work);
 			}
 		}
-		spin_unlock(&dp->lock);
 	}
 
     return IRQ_HANDLED;
 }
 
-void zynq_v4l2_vdma_intr_enable(struct zynq_v4l2_data *dp)
+void zynq_v4l2_vdma_intr_enable(struct zynq_v4l2_dev_data *dp)
 {
-	XAxiVdma_IntrEnable(dp->inst_vdma, XAXIVDMA_IXR_ALL_MASK, XAXIVDMA_WRITE);
+	XAxiVdma_IntrEnable(dp->vdma.inst, XAXIVDMA_IXR_ALL_MASK, XAXIVDMA_WRITE);
 }
 
-void zynq_v4l2_vdma_intr_disable(struct zynq_v4l2_data *dp)
+void zynq_v4l2_vdma_intr_disable(struct zynq_v4l2_dev_data *dp)
 {
-	XAxiVdma_IntrDisable(dp->inst_vdma, XAXIVDMA_IXR_ALL_MASK, XAXIVDMA_WRITE);
+	XAxiVdma_IntrDisable(dp->vdma.inst, XAXIVDMA_IXR_ALL_MASK, XAXIVDMA_WRITE);
 }
 
 int zynq_v4l2_vdma_init(struct device *dev, struct zynq_v4l2_sys_data *sp)
@@ -121,11 +120,11 @@ int zynq_v4l2_vdma_init(struct device *dev, struct zynq_v4l2_sys_data *sp)
 	printk(KERN_INFO "%s\n", __FUNCTION__);
 
 	for (minor = 0; minor < MINOR_NUM; minor++) {
-		struct zynq_v4l2_data *dp = &sp->dev[minor];
+		struct zynq_v4l2_dev_data *dp = &sp->dev[minor];
 
-		dp->inst_vdma = &inst[minor];
-		dp->reg_vdma = ioremap_nocache(baseaddr[minor], highaddr[minor] - baseaddr[minor]);
-		if (!dp->reg_vdma) {
+		dp->vdma.inst = &inst[minor];
+		dp->vdma.reg = ioremap_nocache(baseaddr[minor], highaddr[minor] - baseaddr[minor]);
+		if (!dp->vdma.reg) {
 			printk(KERN_ERR "ioremap_nocache failed %d\n", minor);
 			rc = -ENOMEM;
 			goto error;
@@ -138,7 +137,7 @@ int zynq_v4l2_vdma_init(struct device *dev, struct zynq_v4l2_sys_data *sp)
 			goto error;
 		}
 
-		Status = XAxiVdma_CfgInitialize(&inst[minor], psConf, (UINTPTR)dp->reg_vdma);
+		Status = XAxiVdma_CfgInitialize(&inst[minor], psConf, (UINTPTR)dp->vdma.reg);
 		if (Status != XST_SUCCESS) {
 			printk(KERN_ERR "XAxiVdma_CfgInitialize failed %d\n", minor);
 			rc = -ENODEV;
@@ -151,20 +150,23 @@ int zynq_v4l2_vdma_init(struct device *dev, struct zynq_v4l2_sys_data *sp)
 		dma_set_mask(dp->dma_dev, DMA_BIT_MASK(32));
 		dma_set_coherent_mask(dp->dma_dev, DMA_BIT_MASK(32));
 
-		dp->frame_size = vdma_h_res * inst[minor].WriteChannel.StreamWidth * vdma_v_res;
-		dp->alloc_size_wb_vdma = dp->frame_size * inst[minor].MaxNumFrames;
-		PRINTK(KERN_INFO "alloc_size = %ld (%d)\n", dp->alloc_size_wb_vdma, minor);
-		dp->virt_wb_vdma = dma_alloc_coherent(dp->dma_dev, dp->alloc_size_wb_vdma, &dp->phys_wb_vdma, GFP_KERNEL);
-		if (IS_ERR_OR_NULL(dp->virt_wb_vdma)) {
-			int retval = PTR_ERR(dp->virt_wb_vdma);
+		dp->frame.size = vdma_h_res * inst[minor].WriteChannel.StreamWidth * vdma_v_res;
+		dp->frame.width = vdma_h_res;
+		dp->frame.height = vdma_v_res;
+		dp->frame.pixelformat = V4L2_PIX_FMT_RGB24;
+		dp->vdma.alloc_size_wb = dp->frame.size * inst[minor].MaxNumFrames;
+		PRINTK(KERN_INFO "alloc_size = %ld (%d)\n", dp->vdma.alloc_size_wb, minor);
+		dp->vdma.virt_wb = dma_alloc_coherent(dp->dma_dev, dp->vdma.alloc_size_wb, &dp->vdma.phys_wb, GFP_KERNEL);
+		if (IS_ERR_OR_NULL(dp->vdma.virt_wb)) {
+			int retval = PTR_ERR(dp->vdma.virt_wb);
 			printk(KERN_ERR "dma_alloc_coherent failed, ret = %d %d\n", retval, minor);
 			rc = -ENODEV;
 			goto error;
 		}
-		PRINTK(KERN_INFO "virt_wb_vdma = %p, phys_wb_vdma = 0x%llx %d\n", dp->virt_wb_vdma, dp->phys_wb_vdma, minor);
+		PRINTK(KERN_INFO "virt_wb = %p, phys_wb = 0x%llx %d\n", dp->vdma.virt_wb, dp->vdma.phys_wb, minor);
 
 		/* no need to flush */
-		//dma_sync_single_for_device(dp->dma_dev, dp->phys_wb_vdma, dp->alloc_size_wb_vdma, DMA_TO_DEVICE);
+		//dma_sync_single_for_device(dp->dma_dev, dp->phys_wb, dp->alloc_size_wb, DMA_TO_DEVICE);
 
 		XAxiVdma_ChannelReset(&inst[minor].WriteChannel);
 
@@ -195,7 +197,7 @@ int zynq_v4l2_vdma_init(struct device *dev, struct zynq_v4l2_sys_data *sp)
 			goto error;
 		}
 
-		addr = dp->phys_wb_vdma;
+		addr = dp->vdma.phys_wb;
 		for (iFrm = 0; iFrm < inst[minor].MaxNumFrames; iFrm++) {
 			WriteCfg.FrameStoreStartAddr[iFrm] = addr;
 			addr += WriteCfg.HoriSizeInput * WriteCfg.VertSizeInput;
@@ -207,8 +209,8 @@ int zynq_v4l2_vdma_init(struct device *dev, struct zynq_v4l2_sys_data *sp)
 			goto error;
 		}
 
-		dp->irq_num_vdma = irq_of_parse_and_map(dev->of_node, 0) + minor;
-		rc = request_irq(dp->irq_num_vdma, zynq_v4l2_vdma_isr, IRQF_SHARED | IRQF_NO_SUSPEND, "vdma", dp);
+		dp->vdma.irq_num = irq_of_parse_and_map(dev->of_node, 0) + minor;
+		rc = request_irq(dp->vdma.irq_num, zynq_v4l2_vdma_isr, IRQF_SHARED | IRQF_NO_SUSPEND, "vdma", dp);
 		if (rc) {
 			printk(KERN_ERR "request_irq = %d %d\n", rc, minor);
 			goto error;
@@ -231,19 +233,19 @@ int zynq_v4l2_vdma_init(struct device *dev, struct zynq_v4l2_sys_data *sp)
 
 error:
 	for (minor = 0; minor < MINOR_NUM; minor++) {
-		struct zynq_v4l2_data *dp = &sp->dev[minor];
+		struct zynq_v4l2_dev_data *dp = &sp->dev[minor];
 
-		if (dp->virt_wb_vdma) {
-			dma_free_coherent(dp->dma_dev, dp->alloc_size_wb_vdma, dp->virt_wb_vdma, dp->phys_wb_vdma);
-			dp->virt_wb_vdma = NULL;
+		if (dp->vdma.virt_wb) {
+			dma_free_coherent(dp->dma_dev, dp->vdma.alloc_size_wb, dp->vdma.virt_wb, dp->vdma.phys_wb);
+			dp->vdma.virt_wb = NULL;
 		}
-		if (dp->reg_vdma) {
-			iounmap(dp->reg_vdma);
-			dp->reg_vdma = NULL;
+		if (dp->vdma.reg) {
+			iounmap(dp->vdma.reg);
+			dp->vdma.reg = NULL;
 		}
-		if (dp->irq_num_vdma) {
-			free_irq(dp->irq_num_vdma, dp);
-			dp->irq_num_vdma = 0;
+		if (dp->vdma.irq_num) {
+			free_irq(dp->vdma.irq_num, dp);
+			dp->vdma.irq_num = 0;
 		}
 	}
 	return rc;
