@@ -43,8 +43,6 @@ static void zynq_v4l2_wq_function(struct work_struct *work)
 	dp->ctrl.latest_frame = slot;
 	dp->ctrl.active_bits |= (1 << slot);
 
-	spin_unlock_irq(&dp->lock);
-
 	/* invalidate dcache */
 	dma_sync_single_for_cpu(dp->dma_dev, dp->vdma.phys_wb + dp->frame.size * wb, dp->frame.size, DMA_FROM_DEVICE);
 
@@ -53,6 +51,8 @@ static void zynq_v4l2_wq_function(struct work_struct *work)
 			   (void *)((unsigned long)dp->vdma.virt_wb + dp->frame.size * wb),
 			   dp->frame.size);
 	}
+
+	spin_unlock_irq(&dp->lock);
 
 	wake_up_interruptible(&dp->ctrl.waitq);
 	PRINTK(KERN_INFO "wb = %d, slot = %d, active_bits = %d, latest_frame = %d\n", wb, slot, dp->ctrl.active_bits, dp->ctrl.latest_frame);
@@ -150,7 +150,11 @@ int zynq_v4l2_vdma_init(struct device *dev, struct zynq_v4l2_sys_data *sp)
 		dma_set_mask(dp->dma_dev, DMA_BIT_MASK(32));
 		dma_set_coherent_mask(dp->dma_dev, DMA_BIT_MASK(32));
 
+		#ifdef YUYVOUT
+		dp->frame.size = vdma_h_res / 2 * inst[minor].WriteChannel.StreamWidth * vdma_v_res;
+		#else /* !YUYVOUT */
 		dp->frame.size = vdma_h_res * inst[minor].WriteChannel.StreamWidth * vdma_v_res;
+		#endif /* !YUYVOUT */
 		dp->frame.width = vdma_h_res;
 		dp->frame.height = vdma_v_res;
 		dp->frame.pixelformat = V4L2_PIX_FMT_RGB24;
@@ -181,7 +185,11 @@ int zynq_v4l2_vdma_init(struct device *dev, struct zynq_v4l2_sys_data *sp)
 
 		XAxiVdma_ClearDmaChannelErrors(&inst[minor], XAXIVDMA_WRITE, XAXIVDMA_SR_ERR_ALL_MASK);
 
+		#ifdef YUYVOUT
+		WriteCfg.HoriSizeInput = vdma_h_res / 2 * inst[minor].WriteChannel.StreamWidth;
+		#else /* !YUYVOUT */
 		WriteCfg.HoriSizeInput = vdma_h_res * inst[minor].WriteChannel.StreamWidth;
+		#endif /* !YUYVOUT */
 		WriteCfg.VertSizeInput = vdma_v_res;
 		WriteCfg.Stride = WriteCfg.HoriSizeInput;
 		WriteCfg.FrameDelay = 0;

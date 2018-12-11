@@ -12,11 +12,7 @@ MODULE_DESCRIPTION("ZYNQ v4l2 device driver");
 MODULE_AUTHOR("osawa");
 MODULE_LICENSE("Dual BSD/GPL");
 
-#ifdef YUYVOUT
-int vdma_h_res = 320;
-#else /* !YUYVOUT */
 int vdma_h_res = 640;
-#endif /* !YUYVOUT */
 int vdma_v_res = 480;
 module_param(vdma_h_res, int, S_IRUGO);
 module_param(vdma_v_res, int, S_IRUGO);

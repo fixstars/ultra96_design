@@ -93,15 +93,9 @@ long zynq_v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				if (fival.height != vdma_v_res) {
 					return -EINVAL;
 				}
-				#ifdef YUYVOUT
-				if (fival.width != vdma_h_res * 2) {
-					return -EINVAL;
-				}
-				#else /* YUYVOUT */
 				if (fival.width != vdma_h_res) {
 					return -EINVAL;
 				}
-				#endif /* YUYVOUT */
 				fival.type = V4L2_FRMIVAL_TYPE_DISCRETE;
 				fival.discrete.numerator = 1;
 				fival.discrete.denominator = CAMERA_FPS;
@@ -149,15 +143,9 @@ long zynq_v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			 (fmt.fmt.pix.pixelformat != V4L2_PIX_FMT_YUYV))) {
 			return -EINVAL;
 		}
-		#ifdef YUYVOUT
-		if (fmt.fmt.pix.width != vdma_h_res * 2) {
-			return -EINVAL;
-		}
-		#else /* YUYVOUT */
 		if (fmt.fmt.pix.width != vdma_h_res) {
 			return -EINVAL;
 		}
-		#endif /* YUYVOUT */
 		return 0;
 	case VIDIOC_S_PARM:
 		if (raw_copy_from_user(&streamparm, (void __user *)arg, sizeof(streamparm))) {
@@ -271,6 +259,7 @@ long zynq_v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			PRINTK(KERN_INFO "DQBUF: slot = %d, dp->ctrl.queue_bits = %d, dp->ctrl.active_bits = %d\n", slot, dp->ctrl.queue_bits, dp->ctrl.active_bits);
 			buf.index = slot;
 			spin_unlock_irq(&dp->lock);
+			buf.bytesused = dp->frame.size;
 			if (raw_copy_to_user((void __user *)arg, &buf, sizeof(buf))) {
 				rc = -EFAULT;
 			} else {
