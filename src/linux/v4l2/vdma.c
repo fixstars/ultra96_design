@@ -43,10 +43,10 @@ static void zynq_v4l2_wq_function(struct work_struct *work)
 	dp->ctrl.latest_frame = slot;
 	dp->ctrl.active_bits |= (1 << slot);
 
-	/* invalidate dcache */
-	dma_sync_single_for_cpu(dp->dma_dev, dp->vdma.phys_wb + dp->frame.size * wb, dp->frame.size, DMA_FROM_DEVICE);
-
 	if (dp->mem.mmap) {
+		/* invalidate dcache */
+		dma_sync_single_for_cpu(dp->dma_dev, dp->vdma.phys_wb + dp->frame.size * wb, dp->frame.size, DMA_FROM_DEVICE);
+
 		memcpy((void *)((unsigned long)dp->mem.mmap + dp->frame.size * slot),
 			   (void *)((unsigned long)dp->vdma.virt_wb + dp->frame.size * wb),
 			   dp->frame.size);
