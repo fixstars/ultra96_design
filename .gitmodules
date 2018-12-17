@@ -1,0 +1,3 @@
+[submodule "src/linux/driver"]
+	path = src/linux/driver
+	url = ssh://git@gitlab.fixstars.com:8022/tech/GENESIS/linux_v4l2_driver.git

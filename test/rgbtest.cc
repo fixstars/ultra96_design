@@ -36,7 +36,7 @@ int main()
     struct v4l2_requestbuffers req;
     struct v4l2_buffer buf;
     enum v4l2_buf_type type;
-    void *user_frame[BUFSIZE];
+    void *user_frame[FRAME_NUM];
 
     fd = open("/dev/video0", O_RDWR);
     if (fd < 0) {

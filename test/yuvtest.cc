@@ -51,7 +51,7 @@ int main()
     struct v4l2_requestbuffers req;
     struct v4l2_buffer buf;
     enum v4l2_buf_type type;
-    void *user_frame[BUFSIZE];
+    void *user_frame[FRAME_NUM];
     unsigned char rgb_buf[WIDTH*HEIGHT*3];
     struct timeval tv1, tv2;
 
