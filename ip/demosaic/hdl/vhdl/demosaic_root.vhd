@@ -37,7 +37,7 @@ port (
     p_idata_TDATA : IN STD_LOGIC_VECTOR (39 downto 0);
     p_idata_TUSER : IN STD_LOGIC_VECTOR (0 downto 0);
     p_idata_TLAST : IN STD_LOGIC_VECTOR (0 downto 0);
-    p_odata_TDATA : OUT STD_LOGIC_VECTOR (31 downto 0);
+    p_odata_TDATA : OUT STD_LOGIC_VECTOR (23 downto 0);
     p_odata_TUSER : OUT STD_LOGIC_VECTOR (0 downto 0);
     p_odata_TLAST : OUT STD_LOGIC_VECTOR (0 downto 0);
     p_idata_TVALID : IN STD_LOGIC;
@@ -50,13 +50,14 @@ end;
 architecture behav of demosaic_root is 
     attribute CORE_GENERATION_INFO : STRING;
     attribute CORE_GENERATION_INFO of behav : architecture is
-    "demosaic_root,hls_ip_2018_2_2,{HLS_INPUT_TYPE=cxx,HLS_INPUT_FLOAT=0,HLS_INPUT_FIXED=0,HLS_INPUT_PART=xczu3eg-sbva484-1-e,HLS_INPUT_CLOCK=6.660000,HLS_INPUT_ARCH=dataflow,HLS_SYN_CLOCK=5.822000,HLS_SYN_LAT=1919883,HLS_SYN_TPT=921787,HLS_SYN_MEM=7,HLS_SYN_DSP=13,HLS_SYN_FF=5483,HLS_SYN_LUT=9850,HLS_VERSION=2018_2_2}";
+    "demosaic_root,hls_ip_2018_2_2,{HLS_INPUT_TYPE=cxx,HLS_INPUT_FLOAT=0,HLS_INPUT_FIXED=0,HLS_INPUT_PART=xczu3eg-sbva484-1-e,HLS_INPUT_CLOCK=6.660000,HLS_INPUT_ARCH=dataflow,HLS_SYN_CLOCK=5.822000,HLS_SYN_LAT=384011,HLS_SYN_TPT=307372,HLS_SYN_MEM=7,HLS_SYN_DSP=0,HLS_SYN_FF=3565,HLS_SYN_LUT=8014,HLS_VERSION=2018_2_2}";
     constant C_S_AXI_DATA_WIDTH : INTEGER range 63 downto 0 := 20;
     constant C_S_AXI_WSTRB_WIDTH : INTEGER range 63 downto 0 := 4;
     constant C_S_AXI_ADDR_WIDTH : INTEGER range 63 downto 0 := 20;
     constant ap_const_logic_1 : STD_LOGIC := '1';
-    constant ap_const_lv32_0 : STD_LOGIC_VECTOR (31 downto 0) := "00000000000000000000000000000000";
+    constant ap_const_lv24_0 : STD_LOGIC_VECTOR (23 downto 0) := "000000000000000000000000";
     constant ap_const_lv1_0 : STD_LOGIC_VECTOR (0 downto 0) := "0";
+    constant ap_const_lv32_0 : STD_LOGIC_VECTOR (31 downto 0) := "00000000000000000000000000000000";
     constant ap_const_lv32_1 : STD_LOGIC_VECTOR (31 downto 0) := "00000000000000000000000000000001";
     constant ap_const_logic_0 : STD_LOGIC := '0';
 
@@ -65,46 +66,36 @@ architecture behav of demosaic_root is
     signal ap_ready : STD_LOGIC;
     signal ap_done : STD_LOGIC;
     signal ap_idle : STD_LOGIC;
-    signal Loop_1_proc85_U0_ap_start : STD_LOGIC;
-    signal Loop_1_proc85_U0_start_full_n : STD_LOGIC;
-    signal Loop_1_proc85_U0_ap_done : STD_LOGIC;
-    signal Loop_1_proc85_U0_ap_continue : STD_LOGIC;
-    signal Loop_1_proc85_U0_ap_idle : STD_LOGIC;
-    signal Loop_1_proc85_U0_ap_ready : STD_LOGIC;
-    signal Loop_1_proc85_U0_start_out : STD_LOGIC;
-    signal Loop_1_proc85_U0_start_write : STD_LOGIC;
-    signal Loop_1_proc85_U0_p_idata_TREADY : STD_LOGIC;
-    signal Loop_1_proc85_U0_p_idata_V_bv_V_din : STD_LOGIC_VECTOR (39 downto 0);
-    signal Loop_1_proc85_U0_p_idata_V_bv_V_write : STD_LOGIC;
-    signal Loop_1_proc85_U0_p_iuser_V_bv_V_din : STD_LOGIC_VECTOR (0 downto 0);
-    signal Loop_1_proc85_U0_p_iuser_V_bv_V_write : STD_LOGIC;
-    signal Loop_1_proc85_U0_p_ilast_V_bv_V_din : STD_LOGIC_VECTOR (0 downto 0);
-    signal Loop_1_proc85_U0_p_ilast_V_bv_V_write : STD_LOGIC;
-    signal demosaic_U0_ap_start : STD_LOGIC;
-    signal demosaic_U0_ap_done : STD_LOGIC;
-    signal demosaic_U0_ap_continue : STD_LOGIC;
-    signal demosaic_U0_ap_idle : STD_LOGIC;
-    signal demosaic_U0_ap_ready : STD_LOGIC;
-    signal demosaic_U0_start_out : STD_LOGIC;
-    signal demosaic_U0_start_write : STD_LOGIC;
-    signal demosaic_U0_p_idata_V_bv_V_read : STD_LOGIC;
-    signal demosaic_U0_p_demosaic_V_bv_V_din : STD_LOGIC_VECTOR (7 downto 0);
-    signal demosaic_U0_p_demosaic_V_bv_V_write : STD_LOGIC;
+    signal Loop_1_proc66_U0_ap_start : STD_LOGIC;
+    signal Loop_1_proc66_U0_start_full_n : STD_LOGIC;
+    signal Loop_1_proc66_U0_ap_done : STD_LOGIC;
+    signal Loop_1_proc66_U0_ap_continue : STD_LOGIC;
+    signal Loop_1_proc66_U0_ap_idle : STD_LOGIC;
+    signal Loop_1_proc66_U0_ap_ready : STD_LOGIC;
+    signal Loop_1_proc66_U0_start_out : STD_LOGIC;
+    signal Loop_1_proc66_U0_start_write : STD_LOGIC;
+    signal Loop_1_proc66_U0_p_idata_TREADY : STD_LOGIC;
+    signal Loop_1_proc66_U0_p_idata_V_bv_V_din : STD_LOGIC_VECTOR (39 downto 0);
+    signal Loop_1_proc66_U0_p_idata_V_bv_V_write : STD_LOGIC;
+    signal Loop_1_proc66_U0_p_iuser_V_bv_V_din : STD_LOGIC_VECTOR (0 downto 0);
+    signal Loop_1_proc66_U0_p_iuser_V_bv_V_write : STD_LOGIC;
+    signal Loop_1_proc66_U0_p_ilast_V_bv_V_din : STD_LOGIC_VECTOR (0 downto 0);
+    signal Loop_1_proc66_U0_p_ilast_V_bv_V_write : STD_LOGIC;
     signal odata_U0_ap_start : STD_LOGIC;
     signal odata_U0_ap_done : STD_LOGIC;
     signal odata_U0_ap_continue : STD_LOGIC;
     signal odata_U0_ap_idle : STD_LOGIC;
     signal odata_U0_ap_ready : STD_LOGIC;
-    signal odata_U0_p_demosaic_V_bv_V_read : STD_LOGIC;
-    signal odata_U0_p_odata_V_bv_V_din : STD_LOGIC_VECTOR (31 downto 0);
+    signal odata_U0_start_out : STD_LOGIC;
+    signal odata_U0_start_write : STD_LOGIC;
+    signal odata_U0_p_idata_V_bv_V_read : STD_LOGIC;
+    signal odata_U0_p_odata_V_bv_V_din : STD_LOGIC_VECTOR (23 downto 0);
     signal odata_U0_p_odata_V_bv_V_write : STD_LOGIC;
     signal olast_U0_ap_start : STD_LOGIC;
     signal olast_U0_ap_done : STD_LOGIC;
     signal olast_U0_ap_continue : STD_LOGIC;
     signal olast_U0_ap_idle : STD_LOGIC;
     signal olast_U0_ap_ready : STD_LOGIC;
-    signal olast_U0_start_out : STD_LOGIC;
-    signal olast_U0_start_write : STD_LOGIC;
     signal olast_U0_p_ilast_V_bv_V_read : STD_LOGIC;
     signal olast_U0_p_olast_V_bv_V_din : STD_LOGIC_VECTOR (0 downto 0);
     signal olast_U0_p_olast_V_bv_V_write : STD_LOGIC;
@@ -116,18 +107,18 @@ architecture behav of demosaic_root is
     signal ouser_U0_p_iuser_V_bv_V_read : STD_LOGIC;
     signal ouser_U0_p_ouser_V_bv_V_din : STD_LOGIC_VECTOR (0 downto 0);
     signal ouser_U0_p_ouser_V_bv_V_write : STD_LOGIC;
-    signal Loop_2_proc86_U0_ap_start : STD_LOGIC;
-    signal Loop_2_proc86_U0_ap_done : STD_LOGIC;
-    signal Loop_2_proc86_U0_ap_continue : STD_LOGIC;
-    signal Loop_2_proc86_U0_ap_idle : STD_LOGIC;
-    signal Loop_2_proc86_U0_ap_ready : STD_LOGIC;
-    signal Loop_2_proc86_U0_p_odata_V_bv_V_read : STD_LOGIC;
-    signal Loop_2_proc86_U0_p_ouser_V_bv_V_read : STD_LOGIC;
-    signal Loop_2_proc86_U0_p_olast_V_bv_V_read : STD_LOGIC;
-    signal Loop_2_proc86_U0_p_odata_TDATA : STD_LOGIC_VECTOR (31 downto 0);
-    signal Loop_2_proc86_U0_p_odata_TVALID : STD_LOGIC;
-    signal Loop_2_proc86_U0_p_odata_TUSER : STD_LOGIC_VECTOR (0 downto 0);
-    signal Loop_2_proc86_U0_p_odata_TLAST : STD_LOGIC_VECTOR (0 downto 0);
+    signal Loop_2_proc67_U0_ap_start : STD_LOGIC;
+    signal Loop_2_proc67_U0_ap_done : STD_LOGIC;
+    signal Loop_2_proc67_U0_ap_continue : STD_LOGIC;
+    signal Loop_2_proc67_U0_ap_idle : STD_LOGIC;
+    signal Loop_2_proc67_U0_ap_ready : STD_LOGIC;
+    signal Loop_2_proc67_U0_p_odata_V_bv_V_read : STD_LOGIC;
+    signal Loop_2_proc67_U0_p_ouser_V_bv_V_read : STD_LOGIC;
+    signal Loop_2_proc67_U0_p_olast_V_bv_V_read : STD_LOGIC;
+    signal Loop_2_proc67_U0_p_odata_TDATA : STD_LOGIC_VECTOR (23 downto 0);
+    signal Loop_2_proc67_U0_p_odata_TVALID : STD_LOGIC;
+    signal Loop_2_proc67_U0_p_odata_TUSER : STD_LOGIC_VECTOR (0 downto 0);
+    signal Loop_2_proc67_U0_p_odata_TLAST : STD_LOGIC_VECTOR (0 downto 0);
     signal ap_sync_continue : STD_LOGIC;
     signal p_idata_V_bv_V_full_n : STD_LOGIC;
     signal p_idata_V_bv_V_dout : STD_LOGIC_VECTOR (39 downto 0);
@@ -138,11 +129,8 @@ architecture behav of demosaic_root is
     signal p_ilast_V_bv_V_full_n : STD_LOGIC;
     signal p_ilast_V_bv_V_dout : STD_LOGIC_VECTOR (0 downto 0);
     signal p_ilast_V_bv_V_empty_n : STD_LOGIC;
-    signal p_demosaic_V_bv_V_full_n : STD_LOGIC;
-    signal p_demosaic_V_bv_V_dout : STD_LOGIC_VECTOR (7 downto 0);
-    signal p_demosaic_V_bv_V_empty_n : STD_LOGIC;
     signal p_odata_V_bv_V_full_n : STD_LOGIC;
-    signal p_odata_V_bv_V_dout : STD_LOGIC_VECTOR (31 downto 0);
+    signal p_odata_V_bv_V_dout : STD_LOGIC_VECTOR (23 downto 0);
     signal p_odata_V_bv_V_empty_n : STD_LOGIC;
     signal p_olast_V_bv_V_full_n : STD_LOGIC;
     signal p_olast_V_bv_V_dout : STD_LOGIC_VECTOR (0 downto 0);
@@ -152,10 +140,10 @@ architecture behav of demosaic_root is
     signal p_ouser_V_bv_V_empty_n : STD_LOGIC;
     signal ap_sync_done : STD_LOGIC;
     signal ap_sync_ready : STD_LOGIC;
-    signal start_for_demosaic_U0_din : STD_LOGIC_VECTOR (0 downto 0);
-    signal start_for_demosaic_U0_full_n : STD_LOGIC;
-    signal start_for_demosaic_U0_dout : STD_LOGIC_VECTOR (0 downto 0);
-    signal start_for_demosaic_U0_empty_n : STD_LOGIC;
+    signal start_for_odata_U0_din : STD_LOGIC_VECTOR (0 downto 0);
+    signal start_for_odata_U0_full_n : STD_LOGIC;
+    signal start_for_odata_U0_dout : STD_LOGIC_VECTOR (0 downto 0);
+    signal start_for_odata_U0_empty_n : STD_LOGIC;
     signal start_for_olast_U0_din : STD_LOGIC_VECTOR (0 downto 0);
     signal start_for_olast_U0_full_n : STD_LOGIC;
     signal start_for_olast_U0_dout : STD_LOGIC_VECTOR (0 downto 0);
@@ -164,23 +152,19 @@ architecture behav of demosaic_root is
     signal start_for_ouser_U0_full_n : STD_LOGIC;
     signal start_for_ouser_U0_dout : STD_LOGIC_VECTOR (0 downto 0);
     signal start_for_ouser_U0_empty_n : STD_LOGIC;
-    signal start_for_odata_U0_din : STD_LOGIC_VECTOR (0 downto 0);
-    signal start_for_odata_U0_full_n : STD_LOGIC;
-    signal start_for_odata_U0_dout : STD_LOGIC_VECTOR (0 downto 0);
-    signal start_for_odata_U0_empty_n : STD_LOGIC;
-    signal odata_U0_start_full_n : STD_LOGIC;
-    signal odata_U0_start_write : STD_LOGIC;
-    signal start_for_Loop_2_proc86_U0_din : STD_LOGIC_VECTOR (0 downto 0);
-    signal start_for_Loop_2_proc86_U0_full_n : STD_LOGIC;
-    signal start_for_Loop_2_proc86_U0_dout : STD_LOGIC_VECTOR (0 downto 0);
-    signal start_for_Loop_2_proc86_U0_empty_n : STD_LOGIC;
+    signal start_for_Loop_2_proc67_U0_din : STD_LOGIC_VECTOR (0 downto 0);
+    signal start_for_Loop_2_proc67_U0_full_n : STD_LOGIC;
+    signal start_for_Loop_2_proc67_U0_dout : STD_LOGIC_VECTOR (0 downto 0);
+    signal start_for_Loop_2_proc67_U0_empty_n : STD_LOGIC;
+    signal olast_U0_start_full_n : STD_LOGIC;
+    signal olast_U0_start_write : STD_LOGIC;
     signal ouser_U0_start_full_n : STD_LOGIC;
     signal ouser_U0_start_write : STD_LOGIC;
-    signal Loop_2_proc86_U0_start_full_n : STD_LOGIC;
-    signal Loop_2_proc86_U0_start_write : STD_LOGIC;
+    signal Loop_2_proc67_U0_start_full_n : STD_LOGIC;
+    signal Loop_2_proc67_U0_start_write : STD_LOGIC;
     signal ap_return : STD_LOGIC_VECTOR (31 downto 0);
 
-    component Loop_1_proc85 IS
+    component Loop_1_proc66 IS
     port (
         ap_clk : IN STD_LOGIC;
         ap_rst : IN STD_LOGIC;
@@ -209,7 +193,7 @@ architecture behav of demosaic_root is
     end component;
 
 
-    component demosaic IS
+    component odata IS
     port (
         ap_clk : IN STD_LOGIC;
         ap_rst : IN STD_LOGIC;
@@ -224,25 +208,7 @@ architecture behav of demosaic_root is
         p_idata_V_bv_V_dout : IN STD_LOGIC_VECTOR (39 downto 0);
         p_idata_V_bv_V_empty_n : IN STD_LOGIC;
         p_idata_V_bv_V_read : OUT STD_LOGIC;
-        p_demosaic_V_bv_V_din : OUT STD_LOGIC_VECTOR (7 downto 0);
-        p_demosaic_V_bv_V_full_n : IN STD_LOGIC;
-        p_demosaic_V_bv_V_write : OUT STD_LOGIC );
-    end component;
-
-
-    component odata IS
-    port (
-        ap_clk : IN STD_LOGIC;
-        ap_rst : IN STD_LOGIC;
-        ap_start : IN STD_LOGIC;
-        ap_done : OUT STD_LOGIC;
-        ap_continue : IN STD_LOGIC;
-        ap_idle : OUT STD_LOGIC;
-        ap_ready : OUT STD_LOGIC;
-        p_demosaic_V_bv_V_dout : IN STD_LOGIC_VECTOR (7 downto 0);
-        p_demosaic_V_bv_V_empty_n : IN STD_LOGIC;
-        p_demosaic_V_bv_V_read : OUT STD_LOGIC;
-        p_odata_V_bv_V_din : OUT STD_LOGIC_VECTOR (31 downto 0);
+        p_odata_V_bv_V_din : OUT STD_LOGIC_VECTOR (23 downto 0);
         p_odata_V_bv_V_full_n : IN STD_LOGIC;
         p_odata_V_bv_V_write : OUT STD_LOGIC );
     end component;
@@ -253,13 +219,10 @@ architecture behav of demosaic_root is
         ap_clk : IN STD_LOGIC;
         ap_rst : IN STD_LOGIC;
         ap_start : IN STD_LOGIC;
-        start_full_n : IN STD_LOGIC;
         ap_done : OUT STD_LOGIC;
         ap_continue : IN STD_LOGIC;
         ap_idle : OUT STD_LOGIC;
         ap_ready : OUT STD_LOGIC;
-        start_out : OUT STD_LOGIC;
-        start_write : OUT STD_LOGIC;
         p_ilast_V_bv_V_dout : IN STD_LOGIC_VECTOR (0 downto 0);
         p_ilast_V_bv_V_empty_n : IN STD_LOGIC;
         p_ilast_V_bv_V_read : OUT STD_LOGIC;
@@ -287,7 +250,7 @@ architecture behav of demosaic_root is
     end component;
 
 
-    component Loop_2_proc86 IS
+    component Loop_2_proc67 IS
     port (
         ap_clk : IN STD_LOGIC;
         ap_rst : IN STD_LOGIC;
@@ -296,7 +259,7 @@ architecture behav of demosaic_root is
         ap_continue : IN STD_LOGIC;
         ap_idle : OUT STD_LOGIC;
         ap_ready : OUT STD_LOGIC;
-        p_odata_V_bv_V_dout : IN STD_LOGIC_VECTOR (31 downto 0);
+        p_odata_V_bv_V_dout : IN STD_LOGIC_VECTOR (23 downto 0);
         p_odata_V_bv_V_empty_n : IN STD_LOGIC;
         p_odata_V_bv_V_read : OUT STD_LOGIC;
         p_ouser_V_bv_V_dout : IN STD_LOGIC_VECTOR (0 downto 0);
@@ -305,7 +268,7 @@ architecture behav of demosaic_root is
         p_olast_V_bv_V_dout : IN STD_LOGIC_VECTOR (0 downto 0);
         p_olast_V_bv_V_empty_n : IN STD_LOGIC;
         p_olast_V_bv_V_read : OUT STD_LOGIC;
-        p_odata_TDATA : OUT STD_LOGIC_VECTOR (31 downto 0);
+        p_odata_TDATA : OUT STD_LOGIC_VECTOR (23 downto 0);
         p_odata_TVALID : OUT STD_LOGIC;
         p_odata_TREADY : IN STD_LOGIC;
         p_odata_TUSER : OUT STD_LOGIC_VECTOR (0 downto 0);
@@ -343,31 +306,16 @@ architecture behav of demosaic_root is
     end component;
 
 
-    component fifo_w8_d16_A IS
+    component fifo_w24_d16_A IS
     port (
         clk : IN STD_LOGIC;
         reset : IN STD_LOGIC;
         if_read_ce : IN STD_LOGIC;
         if_write_ce : IN STD_LOGIC;
-        if_din : IN STD_LOGIC_VECTOR (7 downto 0);
+        if_din : IN STD_LOGIC_VECTOR (23 downto 0);
         if_full_n : OUT STD_LOGIC;
         if_write : IN STD_LOGIC;
-        if_dout : OUT STD_LOGIC_VECTOR (7 downto 0);
-        if_empty_n : OUT STD_LOGIC;
-        if_read : IN STD_LOGIC );
-    end component;
-
-
-    component fifo_w32_d16_A IS
-    port (
-        clk : IN STD_LOGIC;
-        reset : IN STD_LOGIC;
-        if_read_ce : IN STD_LOGIC;
-        if_write_ce : IN STD_LOGIC;
-        if_din : IN STD_LOGIC_VECTOR (31 downto 0);
-        if_full_n : OUT STD_LOGIC;
-        if_write : IN STD_LOGIC;
-        if_dout : OUT STD_LOGIC_VECTOR (31 downto 0);
+        if_dout : OUT STD_LOGIC_VECTOR (23 downto 0);
         if_empty_n : OUT STD_LOGIC;
         if_read : IN STD_LOGIC );
     end component;
@@ -388,7 +336,7 @@ architecture behav of demosaic_root is
     end component;
 
 
-    component start_for_demosaiocq IS
+    component start_for_odata_U0 IS
     port (
         clk : IN STD_LOGIC;
         reset : IN STD_LOGIC;
@@ -433,22 +381,7 @@ architecture behav of demosaic_root is
     end component;
 
 
-    component start_for_odata_U0 IS
-    port (
-        clk : IN STD_LOGIC;
-        reset : IN STD_LOGIC;
-        if_read_ce : IN STD_LOGIC;
-        if_write_ce : IN STD_LOGIC;
-        if_din : IN STD_LOGIC_VECTOR (0 downto 0);
-        if_full_n : OUT STD_LOGIC;
-        if_write : IN STD_LOGIC;
-        if_dout : OUT STD_LOGIC_VECTOR (0 downto 0);
-        if_empty_n : OUT STD_LOGIC;
-        if_read : IN STD_LOGIC );
-    end component;
-
-
-    component start_for_Loop_2_pcA IS
+    component start_for_Loop_2_dEe IS
     port (
         clk : IN STD_LOGIC;
         reset : IN STD_LOGIC;
@@ -531,64 +464,48 @@ begin
         ap_idle => ap_idle,
         ap_return => ap_const_lv32_0);
 
-    Loop_1_proc85_U0 : component Loop_1_proc85
+    Loop_1_proc66_U0 : component Loop_1_proc66
     port map (
         ap_clk => ap_clk,
         ap_rst => ap_rst_n_inv,
-        ap_start => Loop_1_proc85_U0_ap_start,
-        start_full_n => Loop_1_proc85_U0_start_full_n,
-        ap_done => Loop_1_proc85_U0_ap_done,
-        ap_continue => Loop_1_proc85_U0_ap_continue,
-        ap_idle => Loop_1_proc85_U0_ap_idle,
-        ap_ready => Loop_1_proc85_U0_ap_ready,
-        start_out => Loop_1_proc85_U0_start_out,
-        start_write => Loop_1_proc85_U0_start_write,
+        ap_start => Loop_1_proc66_U0_ap_start,
+        start_full_n => Loop_1_proc66_U0_start_full_n,
+        ap_done => Loop_1_proc66_U0_ap_done,
+        ap_continue => Loop_1_proc66_U0_ap_continue,
+        ap_idle => Loop_1_proc66_U0_ap_idle,
+        ap_ready => Loop_1_proc66_U0_ap_ready,
+        start_out => Loop_1_proc66_U0_start_out,
+        start_write => Loop_1_proc66_U0_start_write,
         p_idata_TDATA => p_idata_TDATA,
         p_idata_TVALID => p_idata_TVALID,
-        p_idata_TREADY => Loop_1_proc85_U0_p_idata_TREADY,
+        p_idata_TREADY => Loop_1_proc66_U0_p_idata_TREADY,
         p_idata_TUSER => p_idata_TUSER,
         p_idata_TLAST => p_idata_TLAST,
-        p_idata_V_bv_V_din => Loop_1_proc85_U0_p_idata_V_bv_V_din,
+        p_idata_V_bv_V_din => Loop_1_proc66_U0_p_idata_V_bv_V_din,
         p_idata_V_bv_V_full_n => p_idata_V_bv_V_full_n,
-        p_idata_V_bv_V_write => Loop_1_proc85_U0_p_idata_V_bv_V_write,
-        p_iuser_V_bv_V_din => Loop_1_proc85_U0_p_iuser_V_bv_V_din,
+        p_idata_V_bv_V_write => Loop_1_proc66_U0_p_idata_V_bv_V_write,
+        p_iuser_V_bv_V_din => Loop_1_proc66_U0_p_iuser_V_bv_V_din,
         p_iuser_V_bv_V_full_n => p_iuser_V_bv_V_full_n,
-        p_iuser_V_bv_V_write => Loop_1_proc85_U0_p_iuser_V_bv_V_write,
-        p_ilast_V_bv_V_din => Loop_1_proc85_U0_p_ilast_V_bv_V_din,
+        p_iuser_V_bv_V_write => Loop_1_proc66_U0_p_iuser_V_bv_V_write,
+        p_ilast_V_bv_V_din => Loop_1_proc66_U0_p_ilast_V_bv_V_din,
         p_ilast_V_bv_V_full_n => p_ilast_V_bv_V_full_n,
-        p_ilast_V_bv_V_write => Loop_1_proc85_U0_p_ilast_V_bv_V_write);
-
-    demosaic_U0 : component demosaic
-    port map (
-        ap_clk => ap_clk,
-        ap_rst => ap_rst_n_inv,
-        ap_start => demosaic_U0_ap_start,
-        start_full_n => start_for_odata_U0_full_n,
-        ap_done => demosaic_U0_ap_done,
-        ap_continue => demosaic_U0_ap_continue,
-        ap_idle => demosaic_U0_ap_idle,
-        ap_ready => demosaic_U0_ap_ready,
-        start_out => demosaic_U0_start_out,
-        start_write => demosaic_U0_start_write,
-        p_idata_V_bv_V_dout => p_idata_V_bv_V_dout,
-        p_idata_V_bv_V_empty_n => p_idata_V_bv_V_empty_n,
-        p_idata_V_bv_V_read => demosaic_U0_p_idata_V_bv_V_read,
-        p_demosaic_V_bv_V_din => demosaic_U0_p_demosaic_V_bv_V_din,
-        p_demosaic_V_bv_V_full_n => p_demosaic_V_bv_V_full_n,
-        p_demosaic_V_bv_V_write => demosaic_U0_p_demosaic_V_bv_V_write);
+        p_ilast_V_bv_V_write => Loop_1_proc66_U0_p_ilast_V_bv_V_write);
 
     odata_U0 : component odata
     port map (
         ap_clk => ap_clk,
         ap_rst => ap_rst_n_inv,
         ap_start => odata_U0_ap_start,
+        start_full_n => start_for_Loop_2_proc67_U0_full_n,
         ap_done => odata_U0_ap_done,
         ap_continue => odata_U0_ap_continue,
         ap_idle => odata_U0_ap_idle,
         ap_ready => odata_U0_ap_ready,
-        p_demosaic_V_bv_V_dout => p_demosaic_V_bv_V_dout,
-        p_demosaic_V_bv_V_empty_n => p_demosaic_V_bv_V_empty_n,
-        p_demosaic_V_bv_V_read => odata_U0_p_demosaic_V_bv_V_read,
+        start_out => odata_U0_start_out,
+        start_write => odata_U0_start_write,
+        p_idata_V_bv_V_dout => p_idata_V_bv_V_dout,
+        p_idata_V_bv_V_empty_n => p_idata_V_bv_V_empty_n,
+        p_idata_V_bv_V_read => odata_U0_p_idata_V_bv_V_read,
         p_odata_V_bv_V_din => odata_U0_p_odata_V_bv_V_din,
         p_odata_V_bv_V_full_n => p_odata_V_bv_V_full_n,
         p_odata_V_bv_V_write => odata_U0_p_odata_V_bv_V_write);
@@ -598,13 +515,10 @@ begin
         ap_clk => ap_clk,
         ap_rst => ap_rst_n_inv,
         ap_start => olast_U0_ap_start,
-        start_full_n => start_for_Loop_2_proc86_U0_full_n,
         ap_done => olast_U0_ap_done,
         ap_continue => olast_U0_ap_continue,
         ap_idle => olast_U0_ap_idle,
         ap_ready => olast_U0_ap_ready,
-        start_out => olast_U0_start_out,
-        start_write => olast_U0_start_write,
         p_ilast_V_bv_V_dout => p_ilast_V_bv_V_dout,
         p_ilast_V_bv_V_empty_n => p_ilast_V_bv_V_empty_n,
         p_ilast_V_bv_V_read => olast_U0_p_ilast_V_bv_V_read,
@@ -628,29 +542,29 @@ begin
         p_ouser_V_bv_V_full_n => p_ouser_V_bv_V_full_n,
         p_ouser_V_bv_V_write => ouser_U0_p_ouser_V_bv_V_write);
 
-    Loop_2_proc86_U0 : component Loop_2_proc86
+    Loop_2_proc67_U0 : component Loop_2_proc67
     port map (
         ap_clk => ap_clk,
         ap_rst => ap_rst_n_inv,
-        ap_start => Loop_2_proc86_U0_ap_start,
-        ap_done => Loop_2_proc86_U0_ap_done,
-        ap_continue => Loop_2_proc86_U0_ap_continue,
-        ap_idle => Loop_2_proc86_U0_ap_idle,
-        ap_ready => Loop_2_proc86_U0_ap_ready,
+        ap_start => Loop_2_proc67_U0_ap_start,
+        ap_done => Loop_2_proc67_U0_ap_done,
+        ap_continue => Loop_2_proc67_U0_ap_continue,
+        ap_idle => Loop_2_proc67_U0_ap_idle,
+        ap_ready => Loop_2_proc67_U0_ap_ready,
         p_odata_V_bv_V_dout => p_odata_V_bv_V_dout,
         p_odata_V_bv_V_empty_n => p_odata_V_bv_V_empty_n,
-        p_odata_V_bv_V_read => Loop_2_proc86_U0_p_odata_V_bv_V_read,
+        p_odata_V_bv_V_read => Loop_2_proc67_U0_p_odata_V_bv_V_read,
         p_ouser_V_bv_V_dout => p_ouser_V_bv_V_dout,
         p_ouser_V_bv_V_empty_n => p_ouser_V_bv_V_empty_n,
-        p_ouser_V_bv_V_read => Loop_2_proc86_U0_p_ouser_V_bv_V_read,
+        p_ouser_V_bv_V_read => Loop_2_proc67_U0_p_ouser_V_bv_V_read,
         p_olast_V_bv_V_dout => p_olast_V_bv_V_dout,
         p_olast_V_bv_V_empty_n => p_olast_V_bv_V_empty_n,
-        p_olast_V_bv_V_read => Loop_2_proc86_U0_p_olast_V_bv_V_read,
-        p_odata_TDATA => Loop_2_proc86_U0_p_odata_TDATA,
-        p_odata_TVALID => Loop_2_proc86_U0_p_odata_TVALID,
+        p_olast_V_bv_V_read => Loop_2_proc67_U0_p_olast_V_bv_V_read,
+        p_odata_TDATA => Loop_2_proc67_U0_p_odata_TDATA,
+        p_odata_TVALID => Loop_2_proc67_U0_p_odata_TVALID,
         p_odata_TREADY => p_odata_TREADY,
-        p_odata_TUSER => Loop_2_proc86_U0_p_odata_TUSER,
-        p_odata_TLAST => Loop_2_proc86_U0_p_odata_TLAST);
+        p_odata_TUSER => Loop_2_proc67_U0_p_odata_TUSER,
+        p_odata_TLAST => Loop_2_proc67_U0_p_odata_TLAST);
 
     p_idata_V_bv_V_U : component fifo_w40_d16_A
     port map (
@@ -658,12 +572,12 @@ begin
         reset => ap_rst_n_inv,
         if_read_ce => ap_const_logic_1,
         if_write_ce => ap_const_logic_1,
-        if_din => Loop_1_proc85_U0_p_idata_V_bv_V_din,
+        if_din => Loop_1_proc66_U0_p_idata_V_bv_V_din,
         if_full_n => p_idata_V_bv_V_full_n,
-        if_write => Loop_1_proc85_U0_p_idata_V_bv_V_write,
+        if_write => Loop_1_proc66_U0_p_idata_V_bv_V_write,
         if_dout => p_idata_V_bv_V_dout,
         if_empty_n => p_idata_V_bv_V_empty_n,
-        if_read => demosaic_U0_p_idata_V_bv_V_read);
+        if_read => odata_U0_p_idata_V_bv_V_read);
 
     p_iuser_V_bv_V_U : component fifo_w1_d320_A
     port map (
@@ -671,9 +585,9 @@ begin
         reset => ap_rst_n_inv,
         if_read_ce => ap_const_logic_1,
         if_write_ce => ap_const_logic_1,
-        if_din => Loop_1_proc85_U0_p_iuser_V_bv_V_din,
+        if_din => Loop_1_proc66_U0_p_iuser_V_bv_V_din,
         if_full_n => p_iuser_V_bv_V_full_n,
-        if_write => Loop_1_proc85_U0_p_iuser_V_bv_V_write,
+        if_write => Loop_1_proc66_U0_p_iuser_V_bv_V_write,
         if_dout => p_iuser_V_bv_V_dout,
         if_empty_n => p_iuser_V_bv_V_empty_n,
         if_read => ouser_U0_p_iuser_V_bv_V_read);
@@ -684,27 +598,14 @@ begin
         reset => ap_rst_n_inv,
         if_read_ce => ap_const_logic_1,
         if_write_ce => ap_const_logic_1,
-        if_din => Loop_1_proc85_U0_p_ilast_V_bv_V_din,
+        if_din => Loop_1_proc66_U0_p_ilast_V_bv_V_din,
         if_full_n => p_ilast_V_bv_V_full_n,
-        if_write => Loop_1_proc85_U0_p_ilast_V_bv_V_write,
+        if_write => Loop_1_proc66_U0_p_ilast_V_bv_V_write,
         if_dout => p_ilast_V_bv_V_dout,
         if_empty_n => p_ilast_V_bv_V_empty_n,
         if_read => olast_U0_p_ilast_V_bv_V_read);
 
-    p_demosaic_V_bv_V_U : component fifo_w8_d16_A
-    port map (
-        clk => ap_clk,
-        reset => ap_rst_n_inv,
-        if_read_ce => ap_const_logic_1,
-        if_write_ce => ap_const_logic_1,
-        if_din => demosaic_U0_p_demosaic_V_bv_V_din,
-        if_full_n => p_demosaic_V_bv_V_full_n,
-        if_write => demosaic_U0_p_demosaic_V_bv_V_write,
-        if_dout => p_demosaic_V_bv_V_dout,
-        if_empty_n => p_demosaic_V_bv_V_empty_n,
-        if_read => odata_U0_p_demosaic_V_bv_V_read);
-
-    p_odata_V_bv_V_U : component fifo_w32_d16_A
+    p_odata_V_bv_V_U : component fifo_w24_d16_A
     port map (
         clk => ap_clk,
         reset => ap_rst_n_inv,
@@ -715,7 +616,7 @@ begin
         if_write => odata_U0_p_odata_V_bv_V_write,
         if_dout => p_odata_V_bv_V_dout,
         if_empty_n => p_odata_V_bv_V_empty_n,
-        if_read => Loop_2_proc86_U0_p_odata_V_bv_V_read);
+        if_read => Loop_2_proc67_U0_p_odata_V_bv_V_read);
 
     p_olast_V_bv_V_U : component fifo_w1_d16_A
     port map (
@@ -728,7 +629,7 @@ begin
         if_write => olast_U0_p_olast_V_bv_V_write,
         if_dout => p_olast_V_bv_V_dout,
         if_empty_n => p_olast_V_bv_V_empty_n,
-        if_read => Loop_2_proc86_U0_p_olast_V_bv_V_read);
+        if_read => Loop_2_proc67_U0_p_olast_V_bv_V_read);
 
     p_ouser_V_bv_V_U : component fifo_w1_d16_A
     port map (
@@ -741,20 +642,20 @@ begin
         if_write => ouser_U0_p_ouser_V_bv_V_write,
         if_dout => p_ouser_V_bv_V_dout,
         if_empty_n => p_ouser_V_bv_V_empty_n,
-        if_read => Loop_2_proc86_U0_p_ouser_V_bv_V_read);
+        if_read => Loop_2_proc67_U0_p_ouser_V_bv_V_read);
 
-    start_for_demosaiocq_U : component start_for_demosaiocq
+    start_for_odata_U0_U : component start_for_odata_U0
     port map (
         clk => ap_clk,
         reset => ap_rst_n_inv,
         if_read_ce => ap_const_logic_1,
         if_write_ce => ap_const_logic_1,
-        if_din => start_for_demosaic_U0_din,
-        if_full_n => start_for_demosaic_U0_full_n,
-        if_write => Loop_1_proc85_U0_start_write,
-        if_dout => start_for_demosaic_U0_dout,
-        if_empty_n => start_for_demosaic_U0_empty_n,
-        if_read => demosaic_U0_ap_ready);
+        if_din => start_for_odata_U0_din,
+        if_full_n => start_for_odata_U0_full_n,
+        if_write => Loop_1_proc66_U0_start_write,
+        if_dout => start_for_odata_U0_dout,
+        if_empty_n => start_for_odata_U0_empty_n,
+        if_read => odata_U0_ap_ready);
 
     start_for_olast_U0_U : component start_for_olast_U0
     port map (
@@ -764,7 +665,7 @@ begin
         if_write_ce => ap_const_logic_1,
         if_din => start_for_olast_U0_din,
         if_full_n => start_for_olast_U0_full_n,
-        if_write => Loop_1_proc85_U0_start_write,
+        if_write => Loop_1_proc66_U0_start_write,
         if_dout => start_for_olast_U0_dout,
         if_empty_n => start_for_olast_U0_empty_n,
         if_read => olast_U0_ap_ready);
@@ -777,50 +678,37 @@ begin
         if_write_ce => ap_const_logic_1,
         if_din => start_for_ouser_U0_din,
         if_full_n => start_for_ouser_U0_full_n,
-        if_write => Loop_1_proc85_U0_start_write,
+        if_write => Loop_1_proc66_U0_start_write,
         if_dout => start_for_ouser_U0_dout,
         if_empty_n => start_for_ouser_U0_empty_n,
         if_read => ouser_U0_ap_ready);
 
-    start_for_odata_U0_U : component start_for_odata_U0
+    start_for_Loop_2_dEe_U : component start_for_Loop_2_dEe
     port map (
         clk => ap_clk,
         reset => ap_rst_n_inv,
         if_read_ce => ap_const_logic_1,
         if_write_ce => ap_const_logic_1,
-        if_din => start_for_odata_U0_din,
-        if_full_n => start_for_odata_U0_full_n,
-        if_write => demosaic_U0_start_write,
-        if_dout => start_for_odata_U0_dout,
-        if_empty_n => start_for_odata_U0_empty_n,
-        if_read => odata_U0_ap_ready);
-
-    start_for_Loop_2_pcA_U : component start_for_Loop_2_pcA
-    port map (
-        clk => ap_clk,
-        reset => ap_rst_n_inv,
-        if_read_ce => ap_const_logic_1,
-        if_write_ce => ap_const_logic_1,
-        if_din => start_for_Loop_2_proc86_U0_din,
-        if_full_n => start_for_Loop_2_proc86_U0_full_n,
-        if_write => olast_U0_start_write,
-        if_dout => start_for_Loop_2_proc86_U0_dout,
-        if_empty_n => start_for_Loop_2_proc86_U0_empty_n,
-        if_read => Loop_2_proc86_U0_ap_ready);
+        if_din => start_for_Loop_2_proc67_U0_din,
+        if_full_n => start_for_Loop_2_proc67_U0_full_n,
+        if_write => odata_U0_start_write,
+        if_dout => start_for_Loop_2_proc67_U0_dout,
+        if_empty_n => start_for_Loop_2_proc67_U0_empty_n,
+        if_read => Loop_2_proc67_U0_ap_ready);
 
 
 
 
-    Loop_1_proc85_U0_ap_continue <= ap_const_logic_1;
-    Loop_1_proc85_U0_ap_start <= ap_start;
-    Loop_1_proc85_U0_start_full_n <= (start_for_ouser_U0_full_n and start_for_olast_U0_full_n and start_for_demosaic_U0_full_n);
-    Loop_2_proc86_U0_ap_continue <= ap_const_logic_1;
-    Loop_2_proc86_U0_ap_start <= start_for_Loop_2_proc86_U0_empty_n;
-    Loop_2_proc86_U0_start_full_n <= ap_const_logic_1;
-    Loop_2_proc86_U0_start_write <= ap_const_logic_0;
-    ap_done <= Loop_2_proc86_U0_ap_done;
-    ap_idle <= (ouser_U0_ap_idle and olast_U0_ap_idle and odata_U0_ap_idle and demosaic_U0_ap_idle and Loop_2_proc86_U0_ap_idle and Loop_1_proc85_U0_ap_idle);
-    ap_ready <= Loop_1_proc85_U0_ap_ready;
+    Loop_1_proc66_U0_ap_continue <= ap_const_logic_1;
+    Loop_1_proc66_U0_ap_start <= ap_start;
+    Loop_1_proc66_U0_start_full_n <= (start_for_ouser_U0_full_n and start_for_olast_U0_full_n and start_for_odata_U0_full_n);
+    Loop_2_proc67_U0_ap_continue <= ap_const_logic_1;
+    Loop_2_proc67_U0_ap_start <= start_for_Loop_2_proc67_U0_empty_n;
+    Loop_2_proc67_U0_start_full_n <= ap_const_logic_1;
+    Loop_2_proc67_U0_start_write <= ap_const_logic_0;
+    ap_done <= Loop_2_proc67_U0_ap_done;
+    ap_idle <= (ouser_U0_ap_idle and olast_U0_ap_idle and odata_U0_ap_idle and Loop_2_proc67_U0_ap_idle and Loop_1_proc66_U0_ap_idle);
+    ap_ready <= Loop_1_proc66_U0_ap_ready;
 
     ap_rst_n_inv_assign_proc : process(ap_rst_n)
     begin
@@ -828,27 +716,24 @@ begin
     end process;
 
     ap_sync_continue <= ap_const_logic_1;
-    ap_sync_done <= Loop_2_proc86_U0_ap_done;
-    ap_sync_ready <= Loop_1_proc85_U0_ap_ready;
-    demosaic_U0_ap_continue <= ap_const_logic_1;
-    demosaic_U0_ap_start <= start_for_demosaic_U0_empty_n;
+    ap_sync_done <= Loop_2_proc67_U0_ap_done;
+    ap_sync_ready <= Loop_1_proc66_U0_ap_ready;
     odata_U0_ap_continue <= ap_const_logic_1;
     odata_U0_ap_start <= start_for_odata_U0_empty_n;
-    odata_U0_start_full_n <= ap_const_logic_1;
-    odata_U0_start_write <= ap_const_logic_0;
     olast_U0_ap_continue <= ap_const_logic_1;
     olast_U0_ap_start <= start_for_olast_U0_empty_n;
+    olast_U0_start_full_n <= ap_const_logic_1;
+    olast_U0_start_write <= ap_const_logic_0;
     ouser_U0_ap_continue <= ap_const_logic_1;
     ouser_U0_ap_start <= start_for_ouser_U0_empty_n;
     ouser_U0_start_full_n <= ap_const_logic_1;
     ouser_U0_start_write <= ap_const_logic_0;
-    p_idata_TREADY <= Loop_1_proc85_U0_p_idata_TREADY;
-    p_odata_TDATA <= Loop_2_proc86_U0_p_odata_TDATA;
-    p_odata_TLAST <= Loop_2_proc86_U0_p_odata_TLAST;
-    p_odata_TUSER <= Loop_2_proc86_U0_p_odata_TUSER;
-    p_odata_TVALID <= Loop_2_proc86_U0_p_odata_TVALID;
-    start_for_Loop_2_proc86_U0_din <= (0=>ap_const_logic_1, others=>'-');
-    start_for_demosaic_U0_din <= (0=>ap_const_logic_1, others=>'-');
+    p_idata_TREADY <= Loop_1_proc66_U0_p_idata_TREADY;
+    p_odata_TDATA <= Loop_2_proc67_U0_p_odata_TDATA;
+    p_odata_TLAST <= Loop_2_proc67_U0_p_odata_TLAST;
+    p_odata_TUSER <= Loop_2_proc67_U0_p_odata_TUSER;
+    p_odata_TVALID <= Loop_2_proc67_U0_p_odata_TVALID;
+    start_for_Loop_2_proc67_U0_din <= (0=>ap_const_logic_1, others=>'-');
     start_for_odata_U0_din <= (0=>ap_const_logic_1, others=>'-');
     start_for_olast_U0_din <= (0=>ap_const_logic_1, others=>'-');
     start_for_ouser_U0_din <= (0=>ap_const_logic_1, others=>'-');

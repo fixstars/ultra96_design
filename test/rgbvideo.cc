@@ -11,9 +11,10 @@
 
 int main()
 {
-    int rc;
-    int w = WIDTH, h = HEIGHT;
+    int rc, key;
     unsigned char *buf;
+    unsigned char rgb_buf[WIDTH * HEIGHT * 3];
+    int w = WIDTH, h = HEIGHT;
 
     rc = v4l2init(w, h, V4L2_PIX_FMT_RGB24);
     if (rc < 0) {
@@ -21,28 +22,32 @@ int main()
         return -1;
     }
 
-    cv::Mat frame(h, w, CV_8UC3);
-    for (int i = 0; i < 20; i++) {
-        printf("frame %d\n", i);
+    cv::Mat img(cv::Size(w, h), CV_8UC3);
+    const char window[16] = "camera";
+    cv::namedWindow(window);
+
+    while (1) {
         rc = v4l2grab(&buf);
         if (rc < 0) {
             fprintf(stderr, "v4l2grab = %d\n", rc);
             return -1;
         }
-        frame.data = buf;
-        std::stringstream ss;
-        ss << "./" << i << ".png";
-        cv::imwrite(ss.str(), frame);
+        memcpy(rgb_buf, buf, WIDTH * HEIGHT * 3);
         rc = v4l2release(rc);
         if (rc < 0) {
             fprintf(stderr, "v4l2release = %d\n", rc);
             return -1;
         }
+        img.data = rgb_buf;
+        cv::imshow(window, img);
+        key = cv::waitKey(1);
+        if (key == 'q') {
+            break;
+        }
     }
-
     rc = v4l2end();
     if (rc < 0) {
-        fprintf(stderr, "v4l2release = %d\n", rc);
+        fprintf(stderr, "v4l2end = %d\n", rc);
         return -1;
     }
 
