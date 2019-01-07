@@ -152,7 +152,6 @@ static config_t cfg_ov5640_init[] =
 
 static config_t cfg_ov5640_init_1920_1080_30[] =
 {
-	//1920 x 1080 @ 30fps, RAW10, MIPISCLK=420, SCLK=84MHz, PCLK=84M
 	//PLL1 configuration
 	//[7:4]=0010 System clock divider /2, [3:0]=0001 Scale divider for MIPI /1
 	{0x3035, 0x21}, // 30fps setting
@@ -233,9 +232,8 @@ static config_t cfg_ov5640_init_1920_1080_30[] =
 	{0x501f, 0x03}
 };
 
-static config_t cfg_ov5640_init_1280_720_60[] =
+static config_t cfg_ov5640_init_1280_720_30[] =
 {
-	//1280 x 720 binned, RAW10, MIPISCLK=280M, SCLK=56Mz, PCLK=56M
 	//PLL1 configuration
 	//[7:4]=0010 System clock divider /2, [3:0]=0001 Scale divider for MIPI /1
 	{0x3035, 0x21},
@@ -318,7 +316,6 @@ static config_t cfg_ov5640_init_1280_720_60[] =
 
 static config_t cfg_ov5640_init_640_480_30[] =
 {
-	//640 x 480 binned, RAW10, MIPISCLK=280M, SCLK=56Mz, PCLK=56M
 	//PLL1 configuration
 	//[7:4]=0010 System clock divider /2, [3:0]=0001 Scale divider for MIPI /1
 	{0x3035, 0x21},
@@ -435,8 +432,8 @@ int init_ov5640(e_resolution resolution)
 		break;
 	case RESOLUTION_1280_720:
 	case RESOLUTION_640_360:
-		cfg = cfg_ov5640_init_1280_720_60;
-		num_cmds = sizeof(cfg_ov5640_init_1280_720_60) / sizeof(cfg_ov5640_init_1280_720_60[0]);
+		cfg = cfg_ov5640_init_1280_720_30;
+		num_cmds = sizeof(cfg_ov5640_init_1280_720_30) / sizeof(cfg_ov5640_init_1280_720_30[0]);
 		break;
 	case RESOLUTION_1920_1080:
 	case RESOLUTION_960_540:
@@ -451,16 +448,12 @@ int init_ov5640(e_resolution resolution)
 		write_reg(fd, cfg[i].addr, cfg[i].val);
 	}
 
-	//write_reg(fd, 0x3008, 0x02);
-
-	//write_reg(fd, 0x3008, 0x42);
-
 	cfg = cfg_ov5640_advanced_awb_;
 	num_cmds = sizeof(cfg_ov5640_advanced_awb_) / sizeof(cfg_ov5640_advanced_awb_[0]);
 	for (int i = 0; i < num_cmds; i++) {
 		write_reg(fd, cfg[i].addr, cfg[i].val);
 	}
-    
+
 	write_reg(fd, 0x3008, 0x02);
 
 	close(fd);
