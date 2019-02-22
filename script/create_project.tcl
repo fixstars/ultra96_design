@@ -5,7 +5,7 @@ set     project_name        "ultra96_design"
 set     root_directory      [file join [file dirname [info script]] ".."]
 set     project_directory   [file join $root_directory $project_name]
 set     board_part          [get_board_parts -quiet -latest_file_version "*ultra96v1*"]
-set     device_parts        "xczu3eg-sbva484-1-e"
+set     device_part         "xczu3eg-sbva484-1-e"
 set     design_bd_tcl_file  [file normalize [file join $root_directory "script/create_bd.tcl"  ]]
 set     design_pin_xdc_file [file normalize [file join $root_directory "src/constrs/Ultra96_constraints_180318.xdc" ]]
 lappend ip_repo_path_list   [file join $root_directory "ip"]
